@@ -38,7 +38,7 @@
         "conditions": {
           "boolean": [
             {
-              "value1": "={{ $json[0] ? true : false }}",
+              "value1": "={{ $json.data.length > 0 ? true : false }}",
               "value2": true
             }
           ]
@@ -55,7 +55,7 @@
           "responseCode": 200
         },
         "respondWith": "json",
-        "responseBody": "={\n  \"found\": true,\n  \"name\": \"{{ $json[0].name }}\"\n}"
+        "responseBody": "={\n  \"found\": true,\n  \"name\": \"{{ $json.data[0].name }}\"\n}"
       },
       "name": "Respond to Webhook (Found)",
       "type": "n8n-nodes-base.respondToWebhook",
