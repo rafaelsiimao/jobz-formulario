@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { sendFormToN8n } from '@/lib/abler-api';
 import {
   createInitialFormState,
   ExperienceLevel,
@@ -311,12 +312,17 @@ export default function JobzIntakeForm() {
         </button>
         <button
           type="button"
-          onClick={() => {
+          onClick={async () => {
             setIsSubmitting(true);
-            setTimeout(() => {
-              setIsSubmitting(false);
+            try {
+              await sendFormToN8n(formData);
               setSubmitted(true);
-            }, 1500);
+            } catch (error) {
+              console.error('Error submitting form', error);
+              alert('Ocorreu um erro ao enviar o formulário. Tente novamente.');
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
           disabled={!formData.jobDetails.aceiteTermosLgpd || !formData.jobDetails.aceitePropostaComercial || isSubmitting}
           className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors disabled:opacity-50"

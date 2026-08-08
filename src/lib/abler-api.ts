@@ -1,4 +1,7 @@
+"use server";
+
 import { ExtractedJobData, ContractType } from './types';
+import { JobzFormData } from '../types/jobz-form';
 
 const ABLER_BASE_URL = process.env.ABLER_API_URL || 'https://hulk-smash.abler.com.br';
 const DEFAULT_ABLER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJjb21wYW55X2lkIjo1ODIsInRpbWVzdGFtcCI6MTc4NTU0MzMyNiwiY29tcGFueV91c2VyX2lkIjoxNDQyfQ.yPAeDlvUJ-20I-4Y1S3ehx5hdvMlVGVQsdg6Iq_SBro';
@@ -26,7 +29,7 @@ function getAblerHeaders() {
   };
 }
 
-export function cleanBenefits(raw: string): string[] {
+function cleanBenefits(raw: string): string[] {
   if (!raw) return [];
   const clean = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   if (clean.length < 3) return [];
@@ -299,83 +302,24 @@ export async function fetchVacancyDetailsFromAbler(vacancyId: string): Promise<E
   };
 }
 
-export interface WebhookPayload {
-  cnpj: string;
-  vacancyType: string;
-  title: string;
-  rawBriefing?: string;
-  quantity?: number;
-  requisitionType?: string;
-}
-
-export interface AblerVacancyCreationPayload {
-  vacancy: {
-    form: 'process_data';
-    title: string;
-    quantity: number;
-    contracting_regime: string;
-    requisition_type: string;
-  };
-}
-
-export function transformWebhookPayloadToAblerPayload(payload: WebhookPayload): AblerVacancyCreationPayload {
-  const rawType = (payload.vacancyType || 'CLT').toUpperCase();
-  let contracting_regime = 'clt';
-  if (rawType.includes('PJ')) {
-    contracting_regime = 'pj';
-  } else if (rawType.includes('ESTAGIO') || rawType.includes('ESTÁGIO')) {
-    contracting_regime = 'estagiario';
-  } else if (rawType.includes('FREELANCER')) {
-    contracting_regime = 'freelancer';
-  } else if (rawType.includes('TEMPORARIO') || rawType.includes('TEMPORÁRIO')) {
-    contracting_regime = 'temporario';
-  } else if (rawType.includes('TERCEIRO')) {
-    contracting_regime = 'terceiro';
+export async function sendFormToN8n(data: JobzFormData): Promise<void> {
+  
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  
+  if (!webhookUrl) {
+    throw new Error('N8N_WEBHOOK_URL is not configured.');
   }
 
-  return {
-    vacancy: {
-      form: 'process_data',
-      title: payload.title || 'Vaga Sem Título',
-      quantity: payload.quantity || 1,
-      contracting_regime,
-      requisition_type: payload.requisitionType || 'expansao',
-    },
-  };
-}
-
-const ABLER_STAGING_BASE_URL = process.env.ABLER_STAGING_API_URL || 'https://hulk-smash.getabler.com';
-
-export async function createAblerDraftVacancy(
-  payload: AblerVacancyCreationPayload,
-  customBaseUrl?: string,
-  customToken?: string
-): Promise<{ id: string; statusKey: string; status: string; statusCode: number }> {
-  const token = customToken || process.env.ABLER_API_TOKEN || DEFAULT_ABLER_TOKEN;
-  const baseUrl = customBaseUrl || process.env.ABLER_STAGING_API_URL || ABLER_STAGING_BASE_URL;
-
-  const res = await fetch(`${baseUrl}/api/company/v1/vacancies`, {
+  const res = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-API-INT-TOKEN': token,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(data),
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Erro Abler API [${res.status}]: ${errorText}`);
+    throw new Error(`Error sending data to n8n [${res.status}]: ${errorText}`);
   }
-
-  const json = await res.json();
-  const attrs = json?.data?.attributes || {};
-  return {
-    id: String(json?.data?.id || ''),
-    statusKey: attrs.status_key || 'draft',
-    status: attrs.status || 'Rascunho',
-    statusCode: res.status,
-  };
 }
-
-
