@@ -1,4 +1,7 @@
+"use server";
+
 import { ExtractedJobData, ContractType } from './types';
+import { JobzFormData } from '../types/jobz-form';
 
 const ABLER_BASE_URL = process.env.ABLER_API_URL || 'https://hulk-smash.abler.com.br';
 const DEFAULT_ABLER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJjb21wYW55X2lkIjo1ODIsInRpbWVzdGFtcCI6MTc4NTU0MzMyNiwiY29tcGFueV91c2VyX2lkIjoxNDQyfQ.yPAeDlvUJ-20I-4Y1S3ehx5hdvMlVGVQsdg6Iq_SBro';
@@ -26,7 +29,7 @@ function getAblerHeaders() {
   };
 }
 
-export function cleanBenefits(raw: string): string[] {
+function cleanBenefits(raw: string): string[] {
   if (!raw) return [];
   const clean = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   if (clean.length < 3) return [];
@@ -297,4 +300,26 @@ export async function fetchVacancyDetailsFromAbler(vacancyId: string): Promise<E
     responsibleEmail,
     responsibleName,
   };
+}
+
+export async function sendFormToN8n(data: JobzFormData): Promise<void> {
+  
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  
+  if (!webhookUrl) {
+    throw new Error('N8N_WEBHOOK_URL is not configured.');
+  }
+
+  const res = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Error sending data to n8n [${res.status}]: ${errorText}`);
+  }
 }

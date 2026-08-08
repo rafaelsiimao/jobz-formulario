@@ -1,0 +1,80 @@
+{
+  "name": "Abertura de Vagas Abler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook/abertura-vagas",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook (JobzFormData)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 100, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ABLER_STAGING_API_URL || 'https://hulk-smash.getabler.com' }}/api/company/v1/vacancies",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-API-INT-TOKEN",
+              "value": "={{ $env.ABLER_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"vacancy\": {\n    \"form\": \"process_data\",\n    \"title\": \"{{ $json.body.jobDetails.tituloCargo }}\",\n    \"quantity\": {{ $json.body.jobDetails.quantidadeVagas }},\n    \"contracting_regime\": \"{{ $json.body.jobDetails.modeloContrato.toLowerCase() === 'pj' ? 'pj' : 'clt' }}\",\n    \"requisition_type\": \"expansao\"\n  }\n}",
+        "options": {}
+      },
+      "name": "Abler HTTP (Create Draft Vacancy)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [ 300, 300 ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@jobz.com.br",
+        "toEmail": "rafael.simao@jobz.com.br",
+        "subject": "Nova vaga aguardando aprovação na Abler",
+        "text": "=Nova vaga aguardando aprovação na Abler: {{ $('Webhook (JobzFormData)').item.json.body.jobDetails.tituloCargo }}. Link: https://app.abler.com.br/vacancies/{{ $json.data.id }}"
+      },
+      "name": "Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [ 500, 300 ]
+    }
+  ],
+  "connections": {
+    "Webhook (JobzFormData)": {
+      "main": [
+        [
+          {
+            "node": "Abler HTTP (Create Draft Vacancy)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abler HTTP (Create Draft Vacancy)": {
+      "main": [
+        [
+          {
+            "node": "Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

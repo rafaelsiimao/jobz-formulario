@@ -1,15 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #F2F5F8;
-  --foreground: #111317;
-  --primary: #1E81FE;
+  /* Colors */
+  --color-blue-jobz: #1E81FE;
+  --color-blue-light: #66A9FF;
+  --color-black-institutional: #111317;
+  --color-text-secondary: #5F6673;
+  --color-text-tertiary: #8A94A3;
+  --color-bg-primary: #F2F5F8;
+  --color-surface: #FAFAFC;
+  --color-card: #FFFFFF;
+  --color-line: #D7DEE7;
+  --color-dark: #080B10;
+  --color-dark-surface: #121823;
+
+  /* Effects */
+  --effect-focus-ring: 0 0 0 3px rgba(30, 129, 254, 0.24);
+  --effect-blue-glow: drop-shadow(0 0 70px rgba(30, 129, 254, 0.45));
+
+  /* Typography */
+  --font-primary: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary);
+  background-color: var(--color-bg-primary);
+  color: var(--color-black-institutional);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Accessibility Focus & Target Rules */
+button,
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: var(--effect-focus-ring);
+}
+
+/* Utility: Sinal em Escala (Quadrante circular azul no canto inferior direito com glow) */
+.sinal-em-escala {
+  position: fixed;
+  bottom: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: var(--color-blue-jobz);
+  border-radius: 50%;
+  filter: var(--effect-blue-glow);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
