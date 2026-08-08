@@ -23,18 +23,29 @@ describe('Task 1: Web App Scaffolding & Design System', () => {
       expect(pkg.dependencies['lucide-react']).toBeDefined();
     });
 
-    it('should have globals.css defined with all required WhatsApp design system CSS variables', () => {
+    it('should have globals.css defined with all required Jobz design system CSS variables', () => {
       const cssPath = path.join(rootDir, 'src', 'app', 'globals.css');
       expect(fs.existsSync(cssPath)).toBe(true);
 
       const cssContent = fs.readFileSync(cssPath, 'utf-8');
-      expect(cssContent).toContain('--bg-chat');
-      expect(cssContent).toContain('--bg-header');
-      expect(cssContent).toContain('--bg-bubble-bot');
-      expect(cssContent).toContain('--bg-bubble-user');
-      expect(cssContent).toContain('--text-main');
-      expect(cssContent).toContain('--text-muted');
-      expect(cssContent).toContain('--accent-green');
+      expect(cssContent).toContain('--color-blue-jobz');
+      expect(cssContent).toContain('--color-blue-light');
+      expect(cssContent).toContain('--color-black-institutional');
+      expect(cssContent).toContain('--color-text-secondary');
+      expect(cssContent).toContain('--color-text-tertiary');
+      expect(cssContent).toContain('--color-bg-primary');
+      expect(cssContent).toContain('--color-surface');
+      expect(cssContent).toContain('--color-card');
+      expect(cssContent).toContain('--color-line');
+      expect(cssContent).toContain('--color-dark');
+      expect(cssContent).toContain('--color-dark-surface');
+      expect(cssContent).toContain('--effect-focus-ring');
+      expect(cssContent).toContain('--effect-blue-glow');
+      expect(cssContent).toContain('--font-primary');
+      expect(cssContent).toContain('--font-mono');
+      expect(cssContent).toContain('.sinal-em-escala');
+      expect(cssContent).toContain(':focus-visible');
+      expect(cssContent).toContain('min-height: 44px');
     });
 
     it('should have layout.tsx with correct title and HTML structure', () => {
