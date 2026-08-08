@@ -1,0 +1,13 @@
+{
+  "name": "Jobz - Automação Abertura de Vagas Abler",
+  "nodes": [
+    { "name": "Webhook Intake", "type": "n8n-nodes-base.webhook" },
+    { "name": "Agendor CNPJ Lookup", "type": "n8n-nodes-base.httpRequest" },
+    { "name": "OpenAI Formatter", "type": "n8n-nodes-base.openAi" },
+    { "name": "Abler Create Customer (If new)", "type": "n8n-nodes-base.httpRequest" },
+    { "name": "Abler Create Vacancy (POST process_data)", "type": "n8n-nodes-base.httpRequest" },
+    { "name": "Abler Update Description (PATCH role_description)", "type": "n8n-nodes-base.httpRequest" },
+    { "name": "Abler Add Original Briefing (POST add_occurrence)", "type": "n8n-nodes-base.httpRequest" },
+    { "name": "Notify Team", "type": "n8n-nodes-base.emailSend" }
+  ]
+}
