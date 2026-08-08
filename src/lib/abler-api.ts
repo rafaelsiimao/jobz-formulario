@@ -298,3 +298,92 @@ export async function fetchVacancyDetailsFromAbler(vacancyId: string): Promise<E
     responsibleName,
   };
 }
+
+export interface WebhookPayload {
+  cnpj: string;
+  vacancyType: string;
+  title: string;
+  rawBriefing?: string;
+  quantity?: number;
+  requisitionType?: string;
+}
+
+export interface AblerVacancyCreationPayload {
+  vacancy: {
+    form: 'process_data';
+    title: string;
+    quantity: number;
+    contracting_regime: string;
+    requisition_type: string;
+  };
+}
+
+export function transformWebhookPayloadToAblerPayload(payload: WebhookPayload): AblerVacancyCreationPayload {
+  const rawType = (payload.vacancyType || 'CLT').toUpperCase();
+  let contracting_regime = 'clt';
+  if (rawType.includes('PJ')) {
+    contracting_regime = 'pj';
+  } else if (rawType.includes('ESTAGIO') || rawType.includes('ESTÁGIO')) {
+    contracting_regime = 'estagiario';
+  } else if (rawType.includes('FREELANCER')) {
+    contracting_regime = 'freelancer';
+  } else if (rawType.includes('TEMPORARIO') || rawType.includes('TEMPORÁRIO')) {
+    contracting_regime = 'temporario';
+  } else if (rawType.includes('TERCEIRO')) {
+    contracting_regime = 'terceiro';
+  }
+
+  return {
+    vacancy: {
+      form: 'process_data',
+      title: payload.title || 'Vaga Sem Título',
+      quantity: payload.quantity || 1,
+      contracting_regime,
+      requisition_type: payload.requisitionType || 'expansao',
+    },
+  };
+}
+
+export async function createAblerDraftVacancy(
+  payload: AblerVacancyCreationPayload,
+  customBaseUrl?: string,
+  customToken?: string
+): Promise<{ id: string; statusKey: string; status: string; statusCode: number }> {
+  const token = customToken || process.env.ABLER_API_TOKEN || DEFAULT_ABLER_TOKEN;
+  const primaryUrl = customBaseUrl || process.env.ABLER_API_URL || ABLER_BASE_URL;
+
+  let res = await fetch(`${primaryUrl}/api/company/v1/vacancies`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-INT-TOKEN': token,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok && primaryUrl !== 'https://hulk-smash.abler.com.br' && res.status === 401) {
+    res = await fetch(`https://hulk-smash.abler.com.br/api/company/v1/vacancies`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-INT-TOKEN': DEFAULT_ABLER_TOKEN,
+      },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Erro Abler API [${res.status}]: ${errorText}`);
+  }
+
+  const json = await res.json();
+  const attrs = json?.data?.attributes || {};
+  return {
+    id: String(json?.data?.id || ''),
+    statusKey: attrs.status_key || 'draft',
+    status: attrs.status || 'Rascunho',
+    statusCode: res.status,
+  };
+}
+
