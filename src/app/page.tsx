@@ -17,17 +17,42 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-interface ChatOption {
+export interface ChatOption {
   label: string;
   action: string;
 }
 
-interface Message {
+export interface Message {
   id: string;
   sender: 'bot' | 'user';
   text: string;
   timestamp: string;
   options?: ChatOption[];
+}
+
+/**
+ * Escapes HTML characters to prevent XSS vulnerabilities.
+ */
+export function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Formats message text with safe inline markdown formatting after escaping HTML entities.
+ */
+export function formatMessageHtml(text: string): string {
+  if (!text) return '';
+  const escaped = escapeHtml(text);
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code class="bg-black/30 px-1 py-0.5 rounded text-xs">$1</code>');
 }
 
 export default function ChatPage() {
@@ -55,6 +80,7 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [cnpj, setCnpj] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Check URL parameters for CNPJ or other contextual parameters
@@ -62,13 +88,14 @@ export default function ChatPage() {
       const params = new URLSearchParams(window.location.search);
       const cnpjParam = params.get('cnpj');
       if (cnpjParam) {
-        setCnpj(cnpjParam);
+        const safeCnpj = escapeHtml(cnpjParam);
+        setCnpj(safeCnpj);
         setMessages((prev) => [
           ...prev,
           {
             id: `cnpj-detected-${Date.now()}`,
             sender: 'bot',
-            text: `🏢 **Empresa identificada via CNPJ:** \`${cnpjParam}\`\nBuscando dados cadastrais no Agendor CRM...`,
+            text: `🏢 **Empresa identificada via CNPJ:** \`${safeCnpj}\`\nBuscando dados cadastrais no Agendor CRM...`,
             timestamp: formatTime(new Date()),
           },
         ]);
@@ -104,11 +131,43 @@ export default function ChatPage() {
       setIsTyping(false);
       const botResponse = generateBotResponse(messageContent);
       setMessages((prev) => [...prev, botResponse]);
-    }, 1200);
+    }, 1000);
   };
 
   const handleOptionClick = (option: ChatOption) => {
     handleSendMessage(option.label);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const userMsg: Message = {
+      id: `user-file-${Date.now()}`,
+      sender: 'user',
+      text: `📎 **Anexo enviado:** ${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
+      timestamp: formatTime(new Date()),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `bot-file-${Date.now()}`,
+          sender: 'bot',
+          text: `📄 Recebi o anexo **${file.name}**. Estou extraindo o conteúdo do briefing para cadastrar a vaga...`,
+          timestamp: formatTime(new Date()),
+        },
+      ]);
+    }, 1000);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const generateBotResponse = (userText: string): Message => {
@@ -150,6 +209,16 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto border-x border-[#222d34] shadow-2xl bg-[#0b141a] text-[#e9edef]">
+      {/* Hidden File Input for Document / Audio Upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".pdf,.doc,.docx,audio/*,image/*"
+        className="hidden"
+        data-testid="file-input"
+      />
+
       {/* WhatsApp App Bar Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-[#202c33] border-b border-[#222d34] z-10">
         <div className="flex items-center space-x-3">
@@ -171,7 +240,10 @@ export default function ChatPage() {
 
         <div className="flex items-center space-x-4 text-[#8696a0]">
           {cnpj && (
-            <div className="hidden sm:flex items-center space-x-1 text-xs bg-[#2a3942] text-[#00a884] px-2.5 py-1 rounded-full border border-[#00a884]/30">
+            <div 
+              data-testid="cnpj-badge"
+              className="hidden sm:flex items-center space-x-1 text-xs bg-[#2a3942] text-[#00a884] px-2.5 py-1 rounded-full border border-[#00a884]/30"
+            >
               <Building2 className="w-3.5 h-3.5" />
               <span>CNPJ: {cnpj}</span>
             </div>
@@ -186,10 +258,11 @@ export default function ChatPage() {
       </header>
 
       {/* Main Conversation Stream */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4 whatsapp-bg">
+      <main className="flex-1 overflow-y-auto p-4 space-y-4 whatsapp-bg" data-testid="chat-stream">
         {messages.map((msg) => (
           <div
             key={msg.id}
+            data-testid={`message-${msg.sender}`}
             className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
           >
             <div
@@ -201,11 +274,9 @@ export default function ChatPage() {
             >
               <div 
                 className="text-sm whitespace-pre-wrap leading-relaxed space-y-2"
+                data-testid="message-content"
                 dangerouslySetInnerHTML={{
-                  __html: msg.text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/`(.*?)`/g, '<code class="bg-black/30 px-1 py-0.5 rounded text-xs">$1</code>')
+                  __html: formatMessageHtml(msg.text)
                 }}
               />
 
@@ -219,12 +290,13 @@ export default function ChatPage() {
 
             {/* Quick Action Options */}
             {msg.options && msg.options.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2 max-w-[85%] sm:max-w-[75%]">
+              <div className="flex flex-wrap gap-2 mt-2 max-w-[85%] sm:max-w-[75%]" data-testid="options-container">
                 {msg.options.map((opt, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleOptionClick(opt)}
                     className="text-xs bg-[#202c33] hover:bg-[#2a3942] text-[#00a884] font-medium border border-[#00a884]/40 px-3 py-1.5 rounded-full transition-all duration-150 flex items-center space-x-1 shadow-sm active:scale-95"
+                    data-testid={`option-button-${opt.action}`}
                   >
                     <span>{opt.label}</span>
                   </button>
@@ -236,7 +308,7 @@ export default function ChatPage() {
 
         {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex items-start">
+          <div className="flex items-start" data-testid="typing-indicator">
             <div className="bubble-bot bg-[#202c33] px-4 py-3 rounded-lg flex items-center space-x-1.5">
               <span className="w-2 h-2 bg-[#8696a0] rounded-full typing-dot" />
               <span className="w-2 h-2 bg-[#8696a0] rounded-full typing-dot" />
@@ -259,8 +331,10 @@ export default function ChatPage() {
         >
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             title="Anexar documento ou áudio"
             className="p-2.5 text-[#8696a0] hover:text-[#e9edef] hover:bg-[#2a3942] rounded-full transition-colors"
+            data-testid="paperclip-button"
           >
             <Paperclip className="w-5 h-5" />
           </button>
@@ -271,12 +345,14 @@ export default function ChatPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Digite os dados da vaga ou cole o briefing..."
             className="flex-1 bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-[#00a884] border border-transparent"
+            data-testid="chat-input"
           />
 
           <button
             type="submit"
             disabled={!input.trim()}
             className="p-2.5 bg-[#00a884] hover:bg-[#008f70] disabled:opacity-40 text-white rounded-full transition-all duration-150 shadow-md flex items-center justify-center"
+            data-testid="send-button"
           >
             <Send className="w-5 h-5" />
           </button>
