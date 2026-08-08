@@ -344,15 +344,17 @@ export function transformWebhookPayloadToAblerPayload(payload: WebhookPayload): 
   };
 }
 
+const ABLER_STAGING_BASE_URL = process.env.ABLER_STAGING_API_URL || 'https://hulk-smash.getabler.com';
+
 export async function createAblerDraftVacancy(
   payload: AblerVacancyCreationPayload,
   customBaseUrl?: string,
   customToken?: string
 ): Promise<{ id: string; statusKey: string; status: string; statusCode: number }> {
   const token = customToken || process.env.ABLER_API_TOKEN || DEFAULT_ABLER_TOKEN;
-  const primaryUrl = customBaseUrl || process.env.ABLER_API_URL || ABLER_BASE_URL;
+  const baseUrl = customBaseUrl || process.env.ABLER_STAGING_API_URL || ABLER_STAGING_BASE_URL;
 
-  let res = await fetch(`${primaryUrl}/api/company/v1/vacancies`, {
+  const res = await fetch(`${baseUrl}/api/company/v1/vacancies`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -360,17 +362,6 @@ export async function createAblerDraftVacancy(
     },
     body: JSON.stringify(payload),
   });
-
-  if (!res.ok && primaryUrl !== 'https://hulk-smash.abler.com.br' && res.status === 401) {
-    res = await fetch(`https://hulk-smash.abler.com.br/api/company/v1/vacancies`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-INT-TOKEN': DEFAULT_ABLER_TOKEN,
-      },
-      body: JSON.stringify(payload),
-    });
-  }
 
   if (!res.ok) {
     const errorText = await res.text();
@@ -386,4 +377,5 @@ export async function createAblerDraftVacancy(
     statusCode: res.status,
   };
 }
+
 
