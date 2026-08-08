@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import {
   createInitialFormState,
+  ExperienceLevel,
   JobzFormData,
   SERVICE_DESCRIPTIONS,
   ServiceType,
@@ -69,7 +70,7 @@ export default function JobzIntakeForm() {
               onChange={handleCnpjChange}
               onBlur={simulateCrmLookup}
               placeholder="00.000.000/0000-00"
-              className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+              className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
             />
             <button 
               type="button" 
@@ -88,7 +89,7 @@ export default function JobzIntakeForm() {
             value={formData.clientIdentity.razaoSocial}
             onChange={(e) => setFormData(prev => ({ ...prev, clientIdentity: { ...prev.clientIdentity, razaoSocial: e.target.value } }))}
             placeholder="Preenchimento automático"
-            className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 text-base bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+            className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
           />
         </div>
       </div>
@@ -162,7 +163,7 @@ export default function JobzIntakeForm() {
             <div>
               <label className="block text-sm font-semibold mb-1">Tipo de Contrato</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
                   <input 
                     type="radio" 
                     name="contrato" 
@@ -173,7 +174,7 @@ export default function JobzIntakeForm() {
                   />
                   <span>CLT</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
                   <input 
                     type="radio" 
                     name="contrato" 
@@ -192,8 +193,8 @@ export default function JobzIntakeForm() {
                 <label className="block text-sm font-semibold mb-1">Nível</label>
                 <select
                   value={formData.jobDetails.nivel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, nivel: e.target.value as any } }))}
-                  className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+                  onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, nivel: e.target.value as ExperienceLevel } }))}
+                  className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
                 >
                   <option value="Júnior">Júnior</option>
                   <option value="Pleno">Pleno</option>
@@ -208,7 +209,7 @@ export default function JobzIntakeForm() {
                   min="1"
                   value={formData.jobDetails.quantidadeVagas}
                   onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, quantidadeVagas: parseInt(e.target.value) || 1 } }))}
-                  className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+                  className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
                 />
               </div>
             </div>
@@ -220,7 +221,7 @@ export default function JobzIntakeForm() {
                 placeholder="Ex: R$ 3.000 a R$ 4.000"
                 value={formData.jobDetails.faixaSalarial}
                 onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, faixaSalarial: e.target.value } }))}
-                className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+                className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
               />
             </div>
 
@@ -230,7 +231,7 @@ export default function JobzIntakeForm() {
                 rows={4}
                 value={formData.jobDetails.responsabilidades}
                 onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, responsabilidades: e.target.value } }))}
-                className="w-full border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow resize-y"
+                className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow resize-y"
               />
             </div>
           </div>
@@ -278,7 +279,7 @@ export default function JobzIntakeForm() {
       </div>
 
       <div className="space-y-3">
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
           <input 
             type="checkbox" 
             checked={formData.jobDetails.aceiteTermosLgpd}
@@ -288,7 +289,7 @@ export default function JobzIntakeForm() {
           <span className="text-sm">Concordo com os Termos de Uso e Política de Privacidade (LGPD).</span>
         </label>
         
-        <label className="flex items-start gap-3 cursor-pointer">
+        <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
           <input 
             type="checkbox" 
             checked={formData.jobDetails.aceitePropostaComercial}
