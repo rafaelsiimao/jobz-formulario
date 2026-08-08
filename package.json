@@ -1,6 +1,6 @@
 {
-  "name": "jobz-brandkit-engine",
-  "version": "0.1.0",
+  "name": "jobz-vagas-chat",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
