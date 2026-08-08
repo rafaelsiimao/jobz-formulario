@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { sendFormToN8n, lookupCnpjInAgendor } from '@/lib/abler-api';
+import { submitForm, lookupCnpjInAgendor } from '@/lib/abler-api';
 import {
   createInitialFormState,
   ExperienceLevel,
@@ -333,7 +333,7 @@ export default function JobzIntakeForm() {
           onClick={async () => {
             setIsSubmitting(true);
             try {
-              await sendFormToN8n(formData);
+              await submitForm(formData);
               setSubmitted(true);
             } catch (error) {
               console.error('Error submitting form', error);

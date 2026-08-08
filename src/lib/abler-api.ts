@@ -302,15 +302,8 @@ export async function fetchVacancyDetailsFromAbler(vacancyId: string): Promise<E
   };
 }
 
-export async function sendFormToN8n(data: JobzFormData): Promise<void> {
-  
-  const webhookUrl = process.env.N8N_WEBHOOK_URL;
-  
-  if (!webhookUrl) {
-    throw new Error('N8N_WEBHOOK_URL is not configured.');
-  }
-
-  const res = await fetch(webhookUrl, {
+export async function submitForm(data: JobzFormData): Promise<void> {
+  const res = await fetch('/api/submit-form', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -319,21 +312,14 @@ export async function sendFormToN8n(data: JobzFormData): Promise<void> {
   });
 
   if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Error sending data to n8n [${res.status}]: ${errorText}`);
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.error || `Erro ao enviar formulário [${res.status}]`);
   }
 }
 
 export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolean, name?: string }> {
-  const webhookUrl = process.env.N8N_AGENDOR_WEBHOOK_URL;
-  
-  if (!webhookUrl) {
-    console.warn('N8N_AGENDOR_WEBHOOK_URL não está configurada. Usando mock provisório.');
-    return { found: false };
-  }
-
   try {
-    const res = await fetch(webhookUrl, {
+    const res = await fetch('/api/agendor-lookup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -342,15 +328,15 @@ export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolea
     });
 
     if (!res.ok) {
-      throw new Error(`Erro no webhook n8n [${res.status}]`);
+      throw new Error(`Erro na consulta [${res.status}]`);
     }
 
     const data = await res.json();
-    // Espera formato: { found: true, name: "Razão Social" } ou { found: false }
     return data;
   } catch (error) {
     console.error('Falha ao consultar Agendor:', error);
     return { found: false };
   }
 }
+
 
