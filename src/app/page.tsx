@@ -1,10 +1,7 @@
 'use client';
 
 import React from 'react';
-import ChatWindow, { formatMessageHtml } from '../components/ChatWindow';
-import { escapeHtml } from '../hooks/useChatState';
-
-export { escapeHtml, formatMessageHtml };
+import ChatWindow from '../components/ChatWindow';
 
 export default function ChatPage() {
   return <ChatWindow />;

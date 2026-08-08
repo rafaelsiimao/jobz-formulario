@@ -5,7 +5,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import fs from 'fs';
 import path from 'path';
 
-import ChatPage, { escapeHtml, formatMessageHtml } from '../src/app/page';
+import ChatPage from '../src/app/page';
+import { formatMessageHtml } from '../src/components/ChatWindow';
+import { escapeHtml } from '../src/hooks/useChatState';
 
 describe('Task 1: Web App Scaffolding & Design System', () => {
   const rootDir = process.cwd();
