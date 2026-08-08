@@ -80,6 +80,39 @@ describe('Task 2: Conversational Chat State Engine & URL Parameter Support', () 
 
       expect(result.current.messages.some((m) => m.text.includes('vaga-dev.pdf'))).toBe(true);
     });
+
+    it('parses both ?cnpj= and ?email= when both are present in URL query string', () => {
+      const originalLocation = window.location;
+      delete (window as any).location;
+      window.location = new URL('http://localhost:3000/?cnpj=12345678000195&email=contato@empresa.com.br') as any;
+
+      const { result } = renderHook(() => useChatState());
+      expect(result.current.clientData.cnpj).toBe('12345678000195');
+      expect(result.current.clientData.email).toBe('contato@empresa.com.br');
+
+      expect(result.current.messages.some((m) => m.text.includes('12345678000195'))).toBe(true);
+      expect(result.current.messages.some((m) => m.text.includes('contato@empresa.com.br'))).toBe(true);
+
+      window.location = originalLocation;
+    });
+
+    it('handles option click using option.value even if label has custom text', () => {
+      vi.useFakeTimers();
+      const { result } = renderHook(() => useChatState());
+
+      act(() => {
+        result.current.sendMessage('Quero cadastrar', 'start_vaga');
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+
+      expect(result.current.step).toBe('JOB_PROFILE_INPUT');
+      expect(result.current.messages.some((m) => m.sender === 'user' && m.text === 'Quero cadastrar')).toBe(true);
+
+      vi.useRealTimers();
+    });
   });
 
   describe('ChatWindow Component', () => {
@@ -98,6 +131,18 @@ describe('Task 2: Conversational Chat State Engine & URL Parameter Support', () 
       render(React.createElement(ChatWindow));
       expect(screen.getByTestId('cnpj-badge')).toBeTruthy();
       expect(screen.getAllByText(/99888777000111/).length).toBeGreaterThanOrEqual(1);
+
+      window.location = originalLocation;
+    });
+
+    it('displays both CNPJ and Email badges when both are present in URL', () => {
+      const originalLocation = window.location;
+      delete (window as any).location;
+      window.location = new URL('http://localhost:3000/?cnpj=99888777000111&email=rh@empresa.com') as any;
+
+      render(React.createElement(ChatWindow));
+      expect(screen.getByTestId('cnpj-badge')).toBeTruthy();
+      expect(screen.getByTestId('email-badge')).toBeTruthy();
 
       window.location = originalLocation;
     });

@@ -49,7 +49,7 @@ export default function ChatWindow() {
   };
 
   const handleOptionClick = (option: ChatOption) => {
-    sendMessage(option.label || option.value);
+    sendMessage(option.label || option.value, option.value);
   };
 
   const onFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,7 +103,7 @@ export default function ChatWindow() {
               <span>CNPJ: {clientData.cnpj}</span>
             </div>
           )}
-          {clientData?.email && !clientData?.cnpj && (
+          {clientData?.email && (
             <div 
               data-testid="email-badge"
               className="hidden sm:flex items-center space-x-1 text-xs bg-[#2a3942] text-[#00a884] px-2.5 py-1 rounded-full border border-[#00a884]/30"

@@ -62,7 +62,8 @@ export function useChatState() {
             },
           ];
         });
-      } else if (emailParam) {
+      }
+      if (emailParam) {
         const safeEmail = escapeHtml(emailParam);
         setClientData((prev) => ({ ...prev, email: safeEmail }));
         setMessages((prev) => {
@@ -81,7 +82,7 @@ export function useChatState() {
     }
   }, []);
 
-  const sendMessage = useCallback((textToSend: string) => {
+  const sendMessage = useCallback((textToSend: string, optionValue?: string) => {
     const content = textToSend.trim();
     if (!content) return;
 
@@ -98,16 +99,32 @@ export function useChatState() {
     setTimeout(() => {
       setIsTyping(false);
       const lower = content.toLowerCase();
+      const valueLower = (optionValue || '').toLowerCase();
       let botResponseText = `Recebido: "${content}".\n\nPara prosseguir com o cadastro da vaga, informe o **título da vaga** ou envie o **briefing em texto/PDF**.`;
       let nextOptions: ChatOption[] | undefined;
 
-      if (lower.includes('iniciar') || lower.includes('vaga') || lower.includes('start_vaga')) {
+      if (
+        valueLower === 'start_vaga' ||
+        lower.includes('iniciar') ||
+        lower.includes('vaga') ||
+        lower.includes('start_vaga')
+      ) {
         botResponseText = 'Perfeito! Vamos começar.\n\n1️⃣ Qual é o **título da vaga**? (Ex: *Assistente Administrativo*, *Desenvolvedor React*)';
         setStep('JOB_PROFILE_INPUT');
-      } else if (lower.includes('briefing') || lower.includes('descrição') || lower.includes('send_briefing')) {
+      } else if (
+        valueLower === 'send_briefing' ||
+        lower.includes('briefing') ||
+        lower.includes('descrição') ||
+        lower.includes('send_briefing')
+      ) {
         botResponseText = 'Ótimo! Você pode colar a descrição completa da vaga aqui no chat ou anexar um documento (PDF/Word/Áudio) usando o ícone de clipe 📎.';
         setStep('JOB_PROFILE_INPUT');
-      } else if (lower.includes('como funciona') || lower.includes('ajuda') || lower.includes('help')) {
+      } else if (
+        valueLower === 'help' ||
+        lower.includes('como funciona') ||
+        lower.includes('ajuda') ||
+        lower.includes('help')
+      ) {
         botResponseText = '💡 **Como Funciona:**\n\n1. Você informa os dados da vaga ou envia um briefing.\n2. Nosso sistema consulta a empresa no Agendor CRM e formata os dados com IA.\n3. Criamos o rascunho da vaga na plataforma Abler.\n4. O recrutador é notificado para publicar!\n\nPronto para tentar?';
         nextOptions = [{ label: '🚀 Iniciar Abertura de Vaga', value: 'start_vaga' }];
       }
