@@ -323,3 +323,34 @@ export async function sendFormToN8n(data: JobzFormData): Promise<void> {
     throw new Error(`Error sending data to n8n [${res.status}]: ${errorText}`);
   }
 }
+
+export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolean, name?: string }> {
+  const webhookUrl = process.env.N8N_AGENDOR_WEBHOOK_URL;
+  
+  if (!webhookUrl) {
+    console.warn('N8N_AGENDOR_WEBHOOK_URL não está configurada. Usando mock provisório.');
+    return { found: false };
+  }
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cnpj }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro no webhook n8n [${res.status}]`);
+    }
+
+    const data = await res.json();
+    // Espera formato: { found: true, name: "Razão Social" } ou { found: false }
+    return data;
+  } catch (error) {
+    console.error('Falha ao consultar Agendor:', error);
+    return { found: false };
+  }
+}
+

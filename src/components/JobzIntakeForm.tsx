@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { sendFormToN8n } from '@/lib/abler-api';
+import { sendFormToN8n, lookupCnpjInAgendor } from '@/lib/abler-api';
 import {
   createInitialFormState,
   ExperienceLevel,
@@ -13,6 +13,7 @@ import {
 export default function JobzIntakeForm() {
   const [formData, setFormData] = useState<JobzFormData>(createInitialFormState());
   const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
+  const [cnpjError, setCnpjError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -37,20 +38,36 @@ export default function JobzIntakeForm() {
     }));
   };
 
-  const simulateCrmLookup = () => {
+  const simulateCrmLookup = async () => {
     const rawCnpj = formData.clientIdentity.cnpjCpf.replace(/\D/g, '');
     if (rawCnpj.length === 14) {
       setIsFetchingCnpj(true);
-      setTimeout(() => {
-        setFormData(prev => ({
-          ...prev,
-          clientIdentity: {
-            ...prev.clientIdentity,
-            razaoSocial: 'Empresa Fictícia Simulada LTDA'
-          }
-        }));
+      setCnpjError(null);
+      try {
+        const result = await lookupCnpjInAgendor(rawCnpj);
+        if (result.found && result.name) {
+          setFormData(prev => ({
+            ...prev,
+            clientIdentity: {
+              ...prev.clientIdentity,
+              razaoSocial: result.name!
+            }
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            clientIdentity: {
+              ...prev.clientIdentity,
+              razaoSocial: ''
+            }
+          }));
+          setCnpjError('Empresa não cadastrada no CRM.');
+        }
+      } catch (err) {
+        setCnpjError('Erro ao consultar CRM.');
+      } finally {
         setIsFetchingCnpj(false);
-      }, 1500);
+      }
     }
   };
 
@@ -88,10 +105,11 @@ export default function JobzIntakeForm() {
           <input
             type="text"
             value={formData.clientIdentity.razaoSocial}
-            onChange={(e) => setFormData(prev => ({ ...prev, clientIdentity: { ...prev.clientIdentity, razaoSocial: e.target.value } }))}
+            readOnly
             placeholder="Preenchimento automático"
-            className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base bg-[var(--color-surface)] focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
+            className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base bg-[var(--color-surface)] opacity-70 focus-visible:outline-none"
           />
+          {cnpjError && <p className="text-red-500 text-sm mt-2 font-medium">{cnpjError}</p>}
         </div>
       </div>
       

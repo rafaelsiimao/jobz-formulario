@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Modelo Story com Pill Tags Centralizadas e Número da Vaga — Jobz Carreira (9:16 - 1080x1920)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --fundo-obrigatorio: #F1F4F7;
+    --card-bg: #FFFFFF;
+    --azul-jobz: #1E81FE;
+    --texto-titulo: #111317;
+    --texto-corpo: #5F6673;
+    --texto-sub: #66A9FF;
+    --linha-borda: #E2E8F0;
+    --fonte-principal: "Plus Jakarta Sans", sans-serif;
+    --fonte-mono: "JetBrains Mono", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: #CBD5E1;
+    color: var(--texto-titulo);
+    font-family: var(--fonte-principal);
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     STORY CANVAS (9:16 — 1080 x 1920 px)
+  ───────────────────────────────────────────────────────────── */
+  .canvas-story-exact {
+    width: 1080px;
+    height: 1920px;
+    background-color: var(--fundo-obrigatorio);
+    position: relative;
+    overflow: hidden;
+    padding: 100px 76px 0px 76px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 30px 80px rgba(17, 19, 23, 0.18);
+  }
+
+  .story-top-curve {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 540px;
+    height: 540px;
+    border-radius: 0 0 0 100%;
+    background: var(--azul-jobz);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .story-content-top {
+    position: relative;
+    z-index: 2;
+  }
+
+  .story-logo-exact {
+    height: 100px;
+    width: auto;
+    margin-bottom: 64px;
+  }
+
+  .story-kicker-exact {
+    font-family: var(--fonte-mono);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--azul-jobz);
+    margin-bottom: 20px;
+  }
+
+  .story-title-exact {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1.08;
+    color: var(--texto-titulo);
+    letter-spacing: -0.03em;
+    margin-bottom: 48px;
+  }
+
+  .story-pills-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+
+  /* Pill Branca Flutuante */
+  .story-pill-item {
+    background: #FFFFFF;
+    border-radius: 32px;
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: 0 10px 30px rgba(17, 19, 23, 0.03);
+  }
+
+  .story-pill-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--fonte-mono);
+    font-size: 19px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #66A9FF;
+  }
+
+  .story-pill-header svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .story-pill-value {
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--texto-titulo);
+    line-height: 1.25;
+  }
+
+  .story-pill-value.blue-val {
+    color: var(--azul-jobz);
+    font-size: 40px;
+    font-weight: 800;
+  }
+
+  /* Pill de Requisitos (Azul Claro) */
+  .story-pill-reqs {
+    background: #BFDBFE;
+    border: 2px solid #3B82F6;
+    border-radius: 32px;
+    padding: 28px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .story-pill-reqs .story-pill-header {
+    color: #1D4ED8;
+  }
+
+  .story-pill-reqs .story-pill-header svg {
+    stroke: #1D4ED8;
+  }
+
+  .story-pill-reqs .story-pill-value {
+    color: #1E293B;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  /* ─── LINHA DE PILL TAGS CENTRALIZADA NO FINAL (ANTES DO CTA) ─── */
+  .story-tags-row-centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 28px;
+  }
+
+  .story-tags-row-centered span {
+    font-family: var(--fonte-mono);
+    font-size: 24px;
+    font-weight: 600;
+    border: 2px solid #D7DEE7;
+    border-radius: 999px;
+    padding: 12px 30px;
+    color: #475569;
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(17, 19, 23, 0.03);
+  }
+
+  .story-tags-row-centered span.highlight {
+    background-color: #EBF3FF;
+    border-color: #B2D3FF;
+    color: var(--azul-jobz);
+    font-weight: 700;
+  }
+
+  /* Botão Preto de CTA no Rodapé */
+  .story-cta-bar {
+    position: relative;
+    z-index: 2;
+    background-color: #111317;
+    color: #FFFFFF;
+    border-radius: 40px 40px 0 0;
+    padding: 56px 50px 76px 50px;
+    text-align: center;
+    font-size: 38px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-left: -76px;
+    margin-right: -76px;
+    width: 1080px;
+  }
+
+  .story-cta-bar span.link {
+    color: #38BDF8;
+    font-weight: 800;
+  }
+</style>
+</head>
+<body>
+
+  <div class="canvas-story-exact" id="story-exact-target">
+    <!-- Top Right Blue Curve -->
+    <div class="story-top-curve"></div>
+
+    <div class="story-content-top">
+      <!-- Logo Official -->
+      <svg class="story-logo-exact" viewBox="0 0 206.91 100">
+        <path fill="#111317" d="M12.18,23.38v56.55c0,2.53-.68,4.48-2.05,5.84s-3.3,2.05-5.83,2.05H0v12.18h3.37c5.33,0,9.64-.68,12.91-2.05,3.28-1.37,5.71-3.56,7.28-6.6,1.57-3.04,2.35-7.12,2.35-12.24V23.38h-13.73ZM12.18,23.38v10.65h13.73v-10.65h-13.73Z"/>
+        <path fill="#1e81fe" d="M32.51,0c0,11.23-9.12,20.35-20.35,20.35V0h20.35Z"/>
+        <path fill="#111317" d="M63.5,80.95c-4.92,0-9.25-.78-13.01-2.36-3.76-1.57-6.93-3.7-9.53-6.4-2.6-2.7-4.56-5.75-5.89-9.17s-2-6.97-2-10.65v-2.15c0-3.82.7-7.46,2.1-10.91,1.4-3.45,3.41-6.52,6.04-9.22s5.82-4.81,9.58-6.35c3.76-1.54,7.99-2.3,12.7-2.3s8.95.77,12.7,2.3c3.75,1.54,6.95,3.65,9.58,6.35,2.63,2.7,4.63,5.77,5.99,9.22,1.37,3.45,2.05,7.08,2.05,10.91v2.15c0,3.69-.67,7.24-2,10.65s-3.3,6.47-5.89,9.17-5.77,4.83-9.53,6.4-8.06,2.36-12.91,2.36c0,0,.02,0,.02,0ZM63.5,68.76c3.48,0,6.42-.77,8.81-2.3,2.39-1.54,4.2-3.62,5.43-6.25s1.84-5.62,1.84-8.96-.63-6.43-1.89-9.06-3.11-4.71-5.53-6.25-5.31-2.3-8.66-2.3-6.23.77-8.66,2.3c-2.42,1.54-4.29,3.62-5.58,6.25-1.3,2.63-1.95,5.65-1.95,9.06s.63,6.34,1.9,8.96c1.26,2.63,3.09,4.71,5.48,6.25s5.33,2.3,8.81,2.3Z"/>
+        <path fill="#111317" d="M133.88,80.85c-4.58,0-8.6-.97-12.09-2.92s-6.21-4.8-8.19-8.55-3.07-8.3-3.28-13.62h2.15v23.25h-11.27V4.23h14.24v37.39l-3.79,5.84c.27-5.74,1.42-10.52,3.43-14.34s4.73-6.69,8.14-8.6c3.41-1.91,7.27-2.87,11.58-2.87,3.82,0,7.31.72,10.45,2.15s5.84,3.43,8.09,5.99c2.25,2.56,3.98,5.55,5.17,8.96s1.79,7.14,1.79,11.17v2.15c0,4.03-.61,7.78-1.85,11.27-1.23,3.48-3,6.54-5.33,9.17-2.32,2.63-5.11,4.68-8.35,6.15s-6.88,2.2-10.91,2.2h.02ZM130.7,68.87c3.07,0,5.75-.77,8.04-2.3,2.29-1.54,4.08-3.64,5.38-6.3s1.95-5.74,1.95-9.22-.65-6.62-1.95-9.22c-1.3-2.59-3.09-4.61-5.38-6.04-2.29-1.43-4.97-2.15-8.04-2.15-2.8,0-5.38.61-7.73,1.84s-4.27,3.04-5.74,5.43-2.2,5.26-2.2,8.6v4.1c0,3.21.75,5.94,2.25,8.19,1.5,2.25,3.45,4,5.84,5.22,2.39,1.23,4.92,1.85,7.58,1.85h0Z"/>
+        <path fill="#1e81fe" d="M163.48,79.01v-11.27l27.45-32.98v1.64l-2.15-2.87,1.74.82h-27.14v-10.96h42.41v11.27l-27.45,32.98v-1.54l2.25,2.87-1.74-.92h28.07v10.96h-43.44Z"/>
+      </svg>
+
+      <div class="story-kicker-exact">OPORTUNIDADE · CLT</div>
+      <h1 class="story-title-exact">Desenvolvedor Full Stack Senior</h1>
+
+      <div class="story-pills-stack">
+        <!-- 1. Local de Trabalho -->
+        <div class="story-pill-item">
+          <div class="story-pill-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1E81FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            LOCAL DE TRABALHO
+          </div>
+          <div class="story-pill-value">Vitória - ES</div>
+        </div>
+
+        <!-- 2. Jornada de Trabalho -->
+        <div class="story-pill-item">
+          <div class="story-pill-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1E81FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            JORNADA DE TRABALHO
+          </div>
+          <div class="story-pill-value">Segunda a Sexta • 08h às 17:30h</div>
+        </div>
+
+        <!-- 3. Salário Mensal -->
+        <div class="story-pill-item">
+          <div class="story-pill-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1E81FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="3"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            SALÁRIO MENSAL
+          </div>
+          <div class="story-pill-value blue-val">R$ 8.000</div>
+        </div>
+
+        <!-- 4. Benefícios -->
+        <div class="story-pill-item">
+          <div class="story-pill-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1E81FE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 12 20 22 4 22 4 12"></polyline>
+              <rect x="2" y="7" width="20" height="5"></rect>
+              <line x1="12" y1="22" x2="12" y2="7"></line>
+              <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+              <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+            </svg>
+            BENEFÍCIOS
+          </div>
+          <div class="story-pill-value">Vale Transporte + Vale Alimentação + WellHub</div>
+        </div>
+
+        <!-- 5. Requisitos -->
+        <div class="story-pill-reqs">
+          <div class="story-pill-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1D4ED8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="m9 14 2 2 4-4"></path>
+            </svg>
+            REQUISITOS
+          </div>
+          <div class="story-pill-value">Ensino Superior Completo • Node.js & React • 3+ anos de experiência</div>
+        </div>
+      </div>
+
+      <!-- ─── PILL TAGS CENTRALIZADAS COM NÚMERO DA VAGA ─── -->
+      <div class="story-tags-row-centered">
+        <span class="highlight">Presencial</span>
+        <span>Vitória / ES</span>
+        <span>Vaga #1042</span>
+      </div>
+    </div>
+
+    <!-- Bottom CTA Bar -->
+    <div class="story-cta-bar">
+      Candidate-se em: <span class="link">jobz.com.br/vagas</span>
+    </div>
+  </div>
+
+</body>
+</html>

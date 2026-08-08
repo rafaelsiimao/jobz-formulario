@@ -1,0 +1,121 @@
+{
+  "name": "Consulta Agendor CRM",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "consulta-cnpj",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook (Consulta CNPJ)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 100, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.agendor.com.br/v3/organizations?cpf_cnpj={{ $json.body.cnpj }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Token {{ $env.AGENDOR_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Agendor HTTP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [ 300, 300 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json[0] ? true : false }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Encontrou Empresa?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 500, 300 ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={\n  \"found\": true,\n  \"name\": \"{{ $json[0].name }}\"\n}"
+      },
+      "name": "Respond to Webhook (Found)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 700, 200 ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={\n  \"found\": false\n}"
+      },
+      "name": "Respond to Webhook (Not Found)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [ 700, 400 ]
+    }
+  ],
+  "connections": {
+    "Webhook (Consulta CNPJ)": {
+      "main": [
+        [
+          {
+            "node": "Agendor HTTP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendor HTTP": {
+      "main": [
+        [
+          {
+            "node": "Encontrou Empresa?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encontrou Empresa?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook (Found)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook (Not Found)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

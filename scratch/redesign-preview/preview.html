@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<title>Jobz Carreira — 3 Opções de Design de Cards (Fundo #F1F4F7)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --fundo-obrigatorio: #F1F4F7;
+    --card-bg: #FFFFFF;
+    --azul-jobz: #1E81FE;
+    --texto-titulo: #111317;
+    --texto-corpo: #5F6673;
+    --texto-sub: #8A94A3;
+    --linha-borda: #D7DEE7;
+    --fonte-principal: "Plus Jakarta Sans", sans-serif;
+    --fonte-mono: "JetBrains Mono", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background-color: var(--fundo-obrigatorio);
+    color: var(--texto-titulo);
+    font-family: var(--fonte-principal);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .header-preview {
+    text-align: center;
+    max-width: 800px;
+  }
+
+  .header-preview h1 {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--texto-titulo);
+    margin-bottom: 8px;
+  }
+
+  .header-preview p {
+    color: var(--texto-corpo);
+    font-size: 15px;
+  }
+
+  .preview-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 1300px;
+  }
+
+  .option-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .option-label {
+    font-family: var(--fonte-mono);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--azul-jobz);
+    background: #FFFFFF;
+    border: 1px solid var(--linha-borda);
+    padding: 6px 16px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(17, 19, 23, 0.04);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     OPÇÃO 1: BRANDBOOK OFICIAL JOBZ CARREIRA
+  ───────────────────────────────────────────────────────────── */
+  .card-option-1 {
+    width: 380px;
+    height: 480px;
+    background-color: var(--fundo-obrigatorio);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--linha-borda);
+    border-radius: 20px;
+  }
+
+  .job-card-official {
+    width: 100%;
+    height: 100%;
+    background: var(--card-bg);
+    border-radius: 24px;
+    border: 1px solid var(--linha-borda);
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(17, 19, 23, 0.07);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* Curva Azul Proprietária no Canto Superior Direito */
+  .job-card-official::after {
+    content: "";
+    position: absolute;
+    right: -24px;
+    top: -24px;
+    width: 96px;
+    height: 96px;
+    border-radius: 0 0 0 96px;
+    background: var(--azul-jobz);
+    pointer-events: none;
+  }
+
+  .card-official-logo {
+    height: 32px;
+    width: auto;
+    margin-bottom: 16px;
+  }
+
+  .card-official-kicker {
+    font-family: var(--fonte-mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--azul-jobz);
+    margin-bottom: 8px;
+  }
+
+  .card-official-title {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--texto-titulo);
+    margin-bottom: 16px;
+  }
+
+  .card-official-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .card-official-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card-official-label {
+    font-family: var(--fonte-mono);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--texto-sub);
+  }
+
+  .card-official-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--texto-titulo);
+    line-height: 1.3;
+  }
+
+  .card-official-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid #EBF0F5;
+    margin-bottom: 14px;
+  }
+
+  .card-official-tags span {
+    font-family: var(--fonte-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    border: 1px solid var(--linha-borda);
+    border-radius: 999px;
+    padding: 4px 10px;
+    color: var(--texto-corpo);
+    background-color: #FAFAFC;
+  }
+
+  .card-official-tags span.highlight {
+    background-color: #EBF3FF;
+    border-color: #B2D3FF;
+    color: var(--azul-jobz);
+    font-weight: 700;
+  }
+
+  .card-official-cta {
+    background-color: #111317;
+    color: #FFFFFF;
+    border-radius: 12px;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .card-official-cta span.link {
+    color: #66A9FF;
+    font-family: var(--fonte-mono);
+    font-size: 11.5px;
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     OPÇÃO 2: EDITORIAL CLEAN & BENTO GRID
+  ───────────────────────────────────────────────────────────── */
+  .card-option-2 {
+    width: 380px;
+    height: 480px;
+    background-color: var(--fundo-obrigatorio);
+    background-image: radial-gradient(rgba(30, 129, 254, 0.12) 1px, transparent 1px);
+    background-size: 20px 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid var(--linha-borda);
+    border-radius: 24px;
+    position: relative;
+  }
+
+  .bento-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .bento-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #FFFFFF;
+    border: 1px solid var(--linha-borda);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--fonte-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--texto-titulo);
+    box-shadow: 0 2px 6px rgba(17, 19, 23, 0.04);
+  }
+
+  .bento-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: var(--azul-jobz);
+  }
+
+  .bento-headline {
+    margin-top: 12px;
+    font-size: 25px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--texto-titulo);
+    letter-spacing: -0.02em;
+  }
+
+  .bento-headline span {
+    color: var(--azul-jobz);
+  }
+
+  .bento-grid-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .bento-box {
+    background: #FFFFFF;
+    border: 1px solid var(--linha-borda);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(17, 19, 23, 0.03);
+  }
+
+  .bento-box.full {
+    grid-column: span 2;
+  }
+
+  .bento-label {
+    font-family: var(--fonte-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--texto-sub);
+    margin-bottom: 3px;
+  }
+
+  .bento-val-large {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--azul-jobz);
+  }
+
+  .bento-val-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto-titulo);
+  }
+
+  .bento-cta-btn {
+    background-color: var(--azul-jobz);
+    color: #FFFFFF;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 6px 16px rgba(30, 129, 254, 0.25);
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     OPÇÃO 3: TECH MODULAR & GRAFISMOS DE CARREIRA
+  ───────────────────────────────────────────────────────────── */
+  .card-option-3 {
+    width: 380px;
+    height: 480px;
+    background-color: var(--fundo-obrigatorio);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid var(--linha-borda);
+    border-radius: 24px;
+    position: relative;
+  }
+
+  /* Corner Crop Marks da Jobz */
+  .crop-mark {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: rgba(17, 19, 23, 0.35);
+    border-style: solid;
+  }
+  .crop-mark.tl { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
+  .crop-mark.tr { top: 12px; right: 12px; border-width: 1px 1px 0 0; }
+  .crop-mark.bl { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
+  .crop-mark.br { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
+
+  .tech-top-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--linha-borda);
+    padding-bottom: 10px;
+  }
+
+  .tech-sys-tag {
+    font-family: var(--fonte-mono);
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--texto-sub);
+    letter-spacing: 0.1em;
+  }
+
+  .tech-header-title {
+    margin-top: 14px;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.18;
+    color: var(--texto-titulo);
+  }
+
+  .tech-modules {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .tech-module-row {
+    background: #FFFFFF;
+    border-left: 3px solid var(--azul-jobz);
+    border-top: 1px solid var(--linha-borda);
+    border-right: 1px solid var(--linha-borda);
+    border-bottom: 1px solid var(--linha-borda);
+    border-radius: 0 12px 12px 0;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tech-mod-title {
+    font-family: var(--fonte-mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--texto-sub);
+    text-transform: uppercase;
+  }
+
+  .tech-mod-val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--texto-titulo);
+  }
+
+  .tech-cta-box {
+    background-color: #111317;
+    color: #FFFFFF;
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid #232730;
+  }
+
+  .tech-cta-box span.link {
+    color: #66A9FF;
+    font-family: var(--fonte-mono);
+  }
+</style>
+</head>
+<body>
+
+  <div class="header-preview">
+    <h1>3 Opções de Design de Cards Jobz Carreira</h1>
+    <p>Todas mantendo o fundo padrão obrigatório <code>#F1F4F7</code> e com o logo e elementos institucionais da marca.</p>
+  </div>
+
+  <div class="preview-grid">
+
+    <!-- ─── OPÇÃO 1 ─── -->
+    <div class="option-container">
+      <div class="option-label">Opção 1: Brandbook Oficial Jobz</div>
+      <div class="card-option-1">
+        <div class="job-card-official">
+          <div>
+            <!-- Logo Oficial SVG -->
+            <svg class="card-official-logo" viewBox="0 0 206.91 100">
+              <path fill="#111317" d="M12.18,23.38v56.55c0,2.53-.68,4.48-2.05,5.84s-3.3,2.05-5.83,2.05H0v12.18h3.37c5.33,0,9.64-.68,12.91-2.05,3.28-1.37,5.71-3.56,7.28-6.6,1.57-3.04,2.35-7.12,2.35-12.24V23.38h-13.73ZM12.18,23.38v10.65h13.73v-10.65h-13.73Z"/>
+              <path fill="#1e81fe" d="M32.51,0c0,11.23-9.12,20.35-20.35,20.35V0h20.35Z"/>
+              <path fill="#111317" d="M63.5,80.95c-4.92,0-9.25-.78-13.01-2.36-3.76-1.57-6.93-3.7-9.53-6.4-2.6-2.7-4.56-5.75-5.89-9.17s-2-6.97-2-10.65v-2.15c0-3.82.7-7.46,2.1-10.91,1.4-3.45,3.41-6.52,6.04-9.22s5.82-4.81,9.58-6.35c3.76-1.54,7.99-2.3,12.7-2.3s8.95.77,12.7,2.3c3.75,1.54,6.95,3.65,9.58,6.35,2.63,2.7,4.63,5.77,5.99,9.22,1.37,3.45,2.05,7.08,2.05,10.91v2.15c0,3.69-.67,7.24-2,10.65s-3.3,6.47-5.89,9.17-5.77,4.83-9.53,6.4-8.06,2.36-12.91,2.36c0,0,.02,0,.02,0ZM63.5,68.76c3.48,0,6.42-.77,8.81-2.3,2.39-1.54,4.2-3.62,5.43-6.25s1.84-5.62,1.84-8.96-.63-6.43-1.89-9.06-3.11-4.71-5.53-6.25-5.31-2.3-8.66-2.3-6.23.77-8.66,2.3c-2.42,1.54-4.29,3.62-5.58,6.25-1.3,2.63-1.95,5.65-1.95,9.06s.63,6.34,1.9,8.96c1.26,2.63,3.09,4.71,5.48,6.25s5.33,2.3,8.81,2.3Z"/>
+              <path fill="#111317" d="M133.88,80.85c-4.58,0-8.6-.97-12.09-2.92s-6.21-4.8-8.19-8.55-3.07-8.3-3.28-13.62h2.15v23.25h-11.27V4.23h14.24v37.39l-3.79,5.84c.27-5.74,1.42-10.52,3.43-14.34s4.73-6.69,8.14-8.6c3.41-1.91,7.27-2.87,11.58-2.87,3.82,0,7.31.72,10.45,2.15s5.84,3.43,8.09,5.99c2.25,2.56,3.98,5.55,5.17,8.96s1.79,7.14,1.79,11.17v2.15c0,4.03-.61,7.78-1.85,11.27-1.23,3.48-3,6.54-5.33,9.17-2.32,2.63-5.11,4.68-8.35,6.15s-6.88,2.2-10.91,2.2h.02ZM130.7,68.87c3.07,0,5.75-.77,8.04-2.3,2.29-1.54,4.08-3.64,5.38-6.3s1.95-5.74,1.95-9.22-.65-6.62-1.95-9.22c-1.3-2.59-3.09-4.61-5.38-6.04-2.29-1.43-4.97-2.15-8.04-2.15-2.8,0-5.38.61-7.73,1.84s-4.27,3.04-5.74,5.43-2.2,5.26-2.2,8.6v4.1c0,3.21.75,5.94,2.25,8.19,1.5,2.25,3.45,4,5.84,5.22,2.39,1.23,4.92,1.85,7.58,1.85h0Z"/>
+              <path fill="#1e81fe" d="M163.48,79.01v-11.27l27.45-32.98v1.64l-2.15-2.87,1.74.82h-27.14v-10.96h42.41v11.27l-27.45,32.98v-1.54l2.25,2.87-1.74-.92h28.07v10.96h-43.44Z"/>
+            </svg>
+
+            <div class="card-official-kicker">OPORTUNIDADE · CLT</div>
+            <h2 class="card-official-title">Desenvolvedor Full Stack Senior</h2>
+
+            <div class="card-official-details">
+              <div class="card-official-row">
+                <span class="card-official-label">Jornada</span>
+                <span class="card-official-value">Segunda a Sexta • 08h às 17:30h</span>
+              </div>
+              <div class="card-official-row">
+                <span class="card-official-label">Salário</span>
+                <span class="card-official-value">R$ 8.000 / mês</span>
+              </div>
+              <div class="card-official-row">
+                <span class="card-official-label">Benefícios</span>
+                <span class="card-official-value">Vale Transporte + Vale Alimentação + WellHub</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card-official-tags">
+              <span class="highlight">Presencial</span>
+              <span>Vitória / ES</span>
+              <span>CLT</span>
+            </div>
+            <div class="card-official-cta">
+              👉 Candidate-se em: <span class="link">jobz.com.br/vagas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── OPÇÃO 2 ─── -->
+    <div class="option-container">
+      <div class="option-label">Opção 2: Editorial Clean & Bento</div>
+      <div class="card-option-2">
+        <div>
+          <div class="bento-top-bar">
+            <svg style="height: 28px; width: auto;" viewBox="0 0 206.91 100">
+              <path fill="#111317" d="M12.18,23.38v56.55c0,2.53-.68,4.48-2.05,5.84s-3.3,2.05-5.83,2.05H0v12.18h3.37c5.33,0,9.64-.68,12.91-2.05,3.28-1.37,5.71-3.56,7.28-6.6,1.57-3.04,2.35-7.12,2.35-12.24V23.38h-13.73ZM12.18,23.38v10.65h13.73v-10.65h-13.73Z"/>
+              <path fill="#1e81fe" d="M32.51,0c0,11.23-9.12,20.35-20.35,20.35V0h20.35Z"/>
+              <path fill="#111317" d="M63.5,80.95c-4.92,0-9.25-.78-13.01-2.36-3.76-1.57-6.93-3.7-9.53-6.4-2.6-2.7-4.56-5.75-5.89-9.17s-2-6.97-2-10.65v-2.15c0-3.82.7-7.46,2.1-10.91,1.4-3.45,3.41-6.52,6.04-9.22s5.82-4.81,9.58-6.35c3.76-1.54,7.99-2.3,12.7-2.3s8.95.77,12.7,2.3c3.75,1.54,6.95,3.65,9.58,6.35,2.63,2.7,4.63,5.77,5.99,9.22,1.37,3.45,2.05,7.08,2.05,10.91v2.15c0,3.69-.67,7.24-2,10.65s-3.3,6.47-5.89,9.17-5.77,4.83-9.53,6.4-8.06,2.36-12.91,2.36c0,0,.02,0,.02,0ZM63.5,68.76c3.48,0,6.42-.77,8.81-2.3,2.39-1.54,4.2-3.62,5.43-6.25s1.84-5.62,1.84-8.96-.63-6.43-1.89-9.06-3.11-4.71-5.53-6.25-5.31-2.3-8.66-2.3-6.23.77-8.66,2.3c-2.42,1.54-4.29,3.62-5.58,6.25-1.3,2.63-1.95,5.65-1.95,9.06s.63,6.34,1.9,8.96c1.26,2.63,3.09,4.71,5.48,6.25s5.33,2.3,8.81,2.3Z"/>
+              <path fill="#111317" d="M133.88,80.85c-4.58,0-8.6-.97-12.09-2.92s-6.21-4.8-8.19-8.55-3.07-8.3-3.28-13.62h2.15v23.25h-11.27V4.23h14.24v37.39l-3.79,5.84c.27-5.74,1.42-10.52,3.43-14.34s4.73-6.69,8.14-8.6c3.41-1.91,7.27-2.87,11.58-2.87,3.82,0,7.31.72,10.45,2.15s5.84,3.43,8.09,5.99c2.25,2.56,3.98,5.55,5.17,8.96s1.79,7.14,1.79,11.17v2.15c0,4.03-.61,7.78-1.85,11.27-1.23,3.48-3,6.54-5.33,9.17-2.32,2.63-5.11,4.68-8.35,6.15s-6.88,2.2-10.91,2.2h.02ZM130.7,68.87c3.07,0,5.75-.77,8.04-2.3,2.29-1.54,4.08-3.64,5.38-6.3s1.95-5.74,1.95-9.22-.65-6.62-1.95-9.22c-1.3-2.59-3.09-4.61-5.38-6.04-2.29-1.43-4.97-2.15-8.04-2.15-2.8,0-5.38.61-7.73,1.84s-4.27,3.04-5.74,5.43-2.2,5.26-2.2,8.6v4.1c0,3.21.75,5.94,2.25,8.19,1.5,2.25,3.45,4,5.84,5.22,2.39,1.23,4.92,1.85,7.58,1.85h0Z"/>
+              <path fill="#1e81fe" d="M163.48,79.01v-11.27l27.45-32.98v1.64l-2.15-2.87,1.74.82h-27.14v-10.96h42.41v11.27l-27.45,32.98v-1.54l2.25,2.87-1.74-.92h28.07v10.96h-43.44Z"/>
+            </svg>
+            <div class="bento-status-pill">
+              <span class="bento-status-dot"></span> VAGA CLT
+            </div>
+          </div>
+
+          <h2 class="bento-headline">Desenvolvedor <span>Full Stack Senior</span></h2>
+
+          <div class="bento-grid-content">
+            <div class="bento-box">
+              <span class="bento-label">Salário Mensal</span>
+              <span class="bento-val-large">R$ 8.000</span>
+            </div>
+            <div class="bento-box">
+              <span class="bento-label">Modalidade</span>
+              <span class="bento-val-text">Presencial • Vitória/ES</span>
+            </div>
+            <div class="bento-box full">
+              <span class="bento-label">Jornada de Trabalho</span>
+              <span class="bento-val-text">Segunda a Sexta • 08h às 17:30h</span>
+            </div>
+            <div class="bento-box full">
+              <span class="bento-label">Benefícios</span>
+              <span class="bento-val-text">Vale Transporte + Vale Alimentação + WellHub</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-cta-btn">
+          👉 Candidate-se em: jobz.com.br/vagas
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── OPÇÃO 3 ─── -->
+    <div class="option-container">
+      <div class="option-label">Opção 3: Tech Modular Jobz</div>
+      <div class="card-option-3">
+        <span class="crop-mark tl"></span>
+        <span class="crop-mark tr"></span>
+        <span class="crop-mark bl"></span>
+        <span class="crop-mark br"></span>
+
+        <div>
+          <div class="tech-top-meta">
+            <svg style="height: 26px; width: auto;" viewBox="0 0 206.91 100">
+              <path fill="#111317" d="M12.18,23.38v56.55c0,2.53-.68,4.48-2.05,5.84s-3.3,2.05-5.83,2.05H0v12.18h3.37c5.33,0,9.64-.68,12.91-2.05,3.28-1.37,5.71-3.56,7.28-6.6,1.57-3.04,2.35-7.12,2.35-12.24V23.38h-13.73ZM12.18,23.38v10.65h13.73v-10.65h-13.73Z"/>
+              <path fill="#1e81fe" d="M32.51,0c0,11.23-9.12,20.35-20.35,20.35V0h20.35Z"/>
+              <path fill="#111317" d="M63.5,80.95c-4.92,0-9.25-.78-13.01-2.36-3.76-1.57-6.93-3.7-9.53-6.4-2.6-2.7-4.56-5.75-5.89-9.17s-2-6.97-2-10.65v-2.15c0-3.82.7-7.46,2.1-10.91,1.4-3.45,3.41-6.52,6.04-9.22s5.82-4.81,9.58-6.35c3.76-1.54,7.99-2.3,12.7-2.3s8.95.77,12.7,2.3c3.75,1.54,6.95,3.65,9.58,6.35,2.63,2.7,4.63,5.77,5.99,9.22,1.37,3.45,2.05,7.08,2.05,10.91v2.15c0,3.69-.67,7.24-2,10.65s-3.3,6.47-5.89,9.17-5.77,4.83-9.53,6.4-8.06,2.36-12.91,2.36c0,0,.02,0,.02,0ZM63.5,68.76c3.48,0,6.42-.77,8.81-2.3,2.39-1.54,4.2-3.62,5.43-6.25s1.84-5.62,1.84-8.96-.63-6.43-1.89-9.06-3.11-4.71-5.53-6.25-5.31-2.3-8.66-2.3-6.23.77-8.66,2.3c-2.42,1.54-4.29,3.62-5.58,6.25-1.3,2.63-1.95,5.65-1.95,9.06s.63,6.34,1.9,8.96c1.26,2.63,3.09,4.71,5.48,6.25s5.33,2.3,8.81,2.3Z"/>
+              <path fill="#111317" d="M133.88,80.85c-4.58,0-8.6-.97-12.09-2.92s-6.21-4.8-8.19-8.55-3.07-8.3-3.28-13.62h2.15v23.25h-11.27V4.23h14.24v37.39l-3.79,5.84c.27-5.74,1.42-10.52,3.43-14.34s4.73-6.69,8.14-8.6c3.41-1.91,7.27-2.87,11.58-2.87,3.82,0,7.31.72,10.45,2.15s5.84,3.43,8.09,5.99c2.25,2.56,3.98,5.55,5.17,8.96s1.79,7.14,1.79,11.17v2.15c0,4.03-.61,7.78-1.85,11.27-1.23,3.48-3,6.54-5.33,9.17-2.32,2.63-5.11,4.68-8.35,6.15s-6.88,2.2-10.91,2.2h.02ZM130.7,68.87c3.07,0,5.75-.77,8.04-2.3,2.29-1.54,4.08-3.64,5.38-6.3s1.95-5.74,1.95-9.22-.65-6.62-1.95-9.22c-1.3-2.59-3.09-4.61-5.38-6.04-2.29-1.43-4.97-2.15-8.04-2.15-2.8,0-5.38.61-7.73,1.84s-4.27,3.04-5.74,5.43-2.2,5.26-2.2,8.6v4.1c0,3.21.75,5.94,2.25,8.19,1.5,2.25,3.45,4,5.84,5.22,2.39,1.23,4.92,1.85,7.58,1.85h0Z"/>
+              <path fill="#1e81fe" d="M163.48,79.01v-11.27l27.45-32.98v1.64l-2.15-2.87,1.74.82h-27.14v-10.96h42.41v11.27l-27.45,32.98v-1.54l2.25,2.87-1.74-.92h28.07v10.96h-43.44Z"/>
+            </svg>
+            <span class="tech-sys-tag">JOBZ-SYS // CLT</span>
+          </div>
+
+          <h2 class="tech-header-title">Desenvolvedor Full Stack Senior</h2>
+
+          <div class="tech-modules">
+            <div class="tech-module-row">
+              <span class="tech-mod-title">Jornada</span>
+              <span class="tech-mod-val">Seg a Sex • 08h às 17:30h</span>
+            </div>
+            <div class="tech-module-row">
+              <span class="tech-mod-title">Salário</span>
+              <span class="tech-mod-val" style="color:#1E81FE">R$ 8.000 / mês</span>
+            </div>
+            <div class="tech-module-row">
+              <span class="tech-mod-title">Modalidade</span>
+              <span class="tech-mod-val">Presencial (Vitória/ES)</span>
+            </div>
+            <div class="tech-module-row">
+              <span class="tech-mod-title">Benefícios</span>
+              <span class="tech-mod-val">VT + VA + WellHub</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tech-cta-box">
+          👉 Candidate-se em: <span class="link">jobz.com.br/vagas</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
