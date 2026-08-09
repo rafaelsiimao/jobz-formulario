@@ -10,6 +10,7 @@ import {
   ServiceType,
   CadastroFields,
   EmpregoFields,
+  EstagioFields,
   ContractType,
   WorkModel,
   GenderPreference
@@ -25,7 +26,7 @@ export default function JobzIntakeForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = formData.currentStep || 0;
-  const totalSteps = formData.serviceType === 'EMPREGO_CLT_PJ' ? 7 : 3; // Estimativa
+  const totalSteps = formData.serviceType === 'EMPREGO_CLT_PJ' ? 7 : formData.serviceType === 'RS_ESTAGIO' ? 7 : 3;
 
   const nextStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -165,8 +166,23 @@ export default function JobzIntakeForm() {
                   tempoIntervalo: '', horarioFim: '', salarioBruto: '', beneficios: [], descricaoBeneficios: '', aceiteAviso24h: false
                 }
               }));
+            } else if (formData.serviceType === 'RS_ESTAGIO') {
+              setFormData(prev => ({
+                ...prev, currentStep: 3,
+                estagioFields: prev.estagioFields || {
+                  jaAbriuVaga: false, modeloTrabalho: 'Presencial', mesmoLocalSede: true,
+                  tipoContrato: 'R&S com Formalização', quantidadeVagas: 1, aceiteGdprPrazo: false,
+                  entrevistador: { nome: '', cargo: '', email: '', celular: '' },
+                  supervisorMesmoEntrevistador: true,
+                  tituloCargo: '', hardSkills: '', softSkills: '', atividades: '', comentariosGerais: '',
+                  nivelEstudante: [], genero: 'Indiferente', sugestaoCurso: '',
+                  periodoEstagio: [], jornadaDias: [], horarioEntrada: '', horarioSaida: '',
+                  valorBolsa: '', valorTransporte: '', contemplaBonificacao: false, contemplaOutroBeneficio: false,
+                  aceiteGdprTermos: false
+                }
+              }));
             } else {
-              alert('Fases 3 e 4 (Estágio e Formalização) serão implementadas em breve.');
+              alert('Fase 4 (Formalização) será implementada em breve.');
             }
           }}
           disabled={!formData.serviceType}
@@ -411,6 +427,187 @@ export default function JobzIntakeForm() {
     );
   };
 
+  // ---------------------------------------------------------------------------
+  // FASE 3: ESTÁGIO - STEPS 3 a 7
+  // ---------------------------------------------------------------------------
+  
+  const getEst = (): EstagioFields => formData.estagioFields!;
+  const setEst = (updates: Partial<EstagioFields>) => {
+    setFormData(prev => ({ ...prev, estagioFields: { ...prev.estagioFields!, ...updates } }));
+  };
+
+  const renderStep3Estagio = () => {
+    const est = getEst();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Modalidade da Vaga</h2></div>
+        
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={est.jaAbriuVaga} onChange={e => setEst({ jaAbriuVaga: e.target.checked })} />
+            Esta é a primeira vez que abrem vaga de estágio?
+          </label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Modelo de Trabalho</label>
+              <select value={est.modeloTrabalho} onChange={e => setEst({ modeloTrabalho: e.target.value as WorkModel })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+                <option value="Presencial">Presencial</option><option value="Híbrido">Híbrido</option><option value="Remoto">Remoto</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Qtd de Vagas</label>
+              <input type="number" min={1} value={est.quantidadeVagas} onChange={e => setEst({ quantidadeVagas: parseInt(e.target.value)||1 })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">Tipo de Contratação</label>
+            <select value={est.tipoContrato} onChange={e => setEst({ tipoContrato: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+              <option value="R&S com Formalização">R&S com Formalização (Jobz faz o contrato)</option>
+              <option value="Apenas R&S">Apenas R&S (Cliente faz o contrato)</option>
+            </select>
+          </div>
+          
+          <div className="p-4 bg-[var(--color-surface)] border rounded-md">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={est.aceiteGdprPrazo} onChange={e => setEst({ aceiteGdprPrazo: e.target.checked })} className="mt-1" />
+              <span className="text-sm">Estou ciente do prazo de 15 dias úteis e condições comerciais.</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!est.aceiteGdprPrazo} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep4Estagio = () => {
+    const est = getEst();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Entrevistador / Supervisor</h2><p className="text-[var(--color-text-secondary)]">Quem irá entrevistar e supervisionar o estagiário?</p></div>
+        
+        <div className="border-t pt-4">
+          <h3 className="font-bold mb-3">Dados do Entrevistador</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm mb-1">Nome Completo</label><input type="text" value={est.entrevistador.nome} onChange={e => setEst({ entrevistador: { ...est.entrevistador, nome: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm mb-1">E-mail</label><input type="email" value={est.entrevistador.email} onChange={e => setEst({ entrevistador: { ...est.entrevistador, email: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm mb-1">Telefone/Celular</label><input type="text" value={est.entrevistador.celular} onChange={e => setEst({ entrevistador: { ...est.entrevistador, celular: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          </div>
+        </div>
+
+        <div className="pt-4">
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input type="checkbox" checked={est.supervisorMesmoEntrevistador} onChange={e => setEst({ supervisorMesmoEntrevistador: e.target.checked })} />
+            O supervisor será a mesma pessoa que o entrevistador?
+          </label>
+        </div>
+
+        {!est.supervisorMesmoEntrevistador && (
+          <div className="border-t pt-4 bg-gray-50 p-4 rounded-md">
+            <h3 className="font-bold mb-3">Dados do Supervisor</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm mb-1">Nome Completo</label><input type="text" value={est.supervisor?.nome || ''} onChange={e => setEst({ supervisor: { ...(est.supervisor||{cargo:'',email:'',celular:'',nome:''}), nome: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">E-mail</label><input type="email" value={est.supervisor?.email || ''} onChange={e => setEst({ supervisor: { ...(est.supervisor||{cargo:'',email:'',celular:'',nome:''}), email: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Telefone/Celular</label><input type="text" value={est.supervisor?.celular || ''} onChange={e => setEst({ supervisor: { ...(est.supervisor||{cargo:'',email:'',celular:'',nome:''}), celular: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Cargo/Formação</label><input type="text" value={est.supervisor?.cargo || ''} onChange={e => setEst({ supervisor: { ...(est.supervisor||{cargo:'',email:'',celular:'',nome:''}), cargo: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!est.entrevistador.nome || !est.entrevistador.celular} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep5Estagio = () => {
+    const est = getEst();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Perfil do Estagiário</h2></div>
+        
+        <div className="space-y-4">
+          <div><label className="block text-sm font-semibold mb-1">Título da Vaga</label><input type="text" placeholder="Ex: Estagiário de Marketing" value={est.tituloCargo} onChange={e => setEst({ tituloCargo: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Cursos Sugeridos (Ex: Administração, Marketing)</label><input type="text" value={est.sugestaoCurso} onChange={e => setEst({ sugestaoCurso: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Atividades e Responsabilidades</label><textarea rows={3} value={est.atividades} onChange={e => setEst({ atividades: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Hard Skills (Conhecimentos Técnicos Básicos)</label><textarea rows={2} value={est.hardSkills} onChange={e => setEst({ hardSkills: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Soft Skills (Perfil Comportamental)</label><textarea rows={2} value={est.softSkills} onChange={e => setEst({ softSkills: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!est.tituloCargo || !est.sugestaoCurso || !est.atividades} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep6Estagio = () => {
+    const est = getEst();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Jornada e Remuneração</h2></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-sm font-semibold mb-1">Valor da Bolsa Auxílio</label><input type="text" placeholder="R$" value={est.valorBolsa} onChange={e => setEst({ valorBolsa: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Auxílio Transporte</label><input type="text" placeholder="R$" value={est.valorTransporte} onChange={e => setEst({ valorTransporte: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-sm font-semibold mb-1">Horário de Entrada</label><input type="time" value={est.horarioEntrada} onChange={e => setEst({ horarioEntrada: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Horário de Saída</label><input type="time" value={est.horarioSaida} onChange={e => setEst({ horarioSaida: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+        </div>
+
+        <div className="p-4 bg-[var(--color-surface)] border rounded-md space-y-3 mt-4">
+          <label className="flex items-center gap-2 cursor-pointer font-semibold"><input type="checkbox" checked={est.contemplaBonificacao} onChange={e => setEst({ contemplaBonificacao: e.target.checked })} /> A vaga possui alguma bonificação?</label>
+          {est.contemplaBonificacao && <input type="text" placeholder="Descreva a bonificação" value={est.descricaoBonificacao || ''} onChange={e => setEst({ descricaoBonificacao: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" />}
+        </div>
+        
+        <div className="p-4 bg-[var(--color-surface)] border rounded-md">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={est.aceiteGdprTermos} onChange={e => setEst({ aceiteGdprTermos: e.target.checked })} className="mt-1" />
+            <span className="text-sm font-medium">Aceito as políticas de privacidade e termos da plataforma.</span>
+          </label>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!est.valorBolsa || !est.horarioEntrada || !est.aceiteGdprTermos} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Revisar Vaga</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep7EstagioReview = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2 text-green-700">Tudo pronto!</h2><p className="text-[var(--color-text-secondary)]">Revise os dados antes de iniciar a captação de estagiários.</p></div>
+        
+        <div className="bg-[var(--color-surface)] border p-4 rounded-md space-y-2 text-sm">
+          <p><strong>Empresa:</strong> {formData.cadastroFields?.razaoSocial || formData.agendorData?.name}</p>
+          <p><strong>Vaga:</strong> {formData.estagioFields?.tituloCargo} ({formData.estagioFields?.tipoContrato})</p>
+          <p><strong>Cursos:</strong> {formData.estagioFields?.sugestaoCurso}</p>
+          <p><strong>Qtd:</strong> {formData.estagioFields?.quantidadeVagas} vaga(s)</p>
+          <p><strong>Bolsa:</strong> {formData.estagioFields?.valorBolsa} + Transporte: {formData.estagioFields?.valorTransporte}</p>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar e Editar</button>
+          <button onClick={() => alert('Fase 5 - Submissão na Abler será implementada em breve!')} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-600">
+            Confirmar e Abrir Vaga
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-[var(--color-card)] rounded-xl shadow-sm border border-[var(--color-line)] p-6 md:p-8 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-line)]">
@@ -428,6 +625,16 @@ export default function JobzIntakeForm() {
           {currentStep === 5 && renderStep5Emprego()}
           {currentStep === 6 && renderStep6Emprego()}
           {currentStep === 7 && renderStep7Review()}
+        </>
+      )}
+      
+      {formData.serviceType === 'RS_ESTAGIO' && (
+        <>
+          {currentStep === 3 && renderStep3Estagio()}
+          {currentStep === 4 && renderStep4Estagio()}
+          {currentStep === 5 && renderStep5Estagio()}
+          {currentStep === 6 && renderStep6Estagio()}
+          {currentStep === 7 && renderStep7EstagioReview()}
         </>
       )}
     </div>
