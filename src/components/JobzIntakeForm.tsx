@@ -174,12 +174,19 @@ export default function JobzIntakeForm() {
     }
   };
 
-  // Submissão Final do Formulário com Loading & Tela de Sucesso + Confetes
+  // Submissão Real do Formulário (Abler + E-mail) com Loading & Tela de Sucesso + Confetes
   const handleSubmitForm = async () => {
     setIsSubmitting(true);
     try {
-      // Simulação da chamada da API de submissão
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const res = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (!res.ok) {
+        throw new Error('Falha ao registrar solicitação.');
+      }
       
       setIsSubmitting(false);
       setFormData(prev => ({ ...prev, currentStep: 7 }));
