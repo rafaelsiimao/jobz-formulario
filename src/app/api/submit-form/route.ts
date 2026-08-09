@@ -15,18 +15,92 @@ export async function POST(request: NextRequest) {
     const formData = await request.json();
     const { cnpjOuCpfBusca, agendorData, ablerCustomerId, empregoFields } = formData;
 
-    const companyName = agendorData?.name || cnpjOuCpfBusca || 'Empresa Cliente';
+    const cleanDoc = (cnpjOuCpfBusca || '').replace(/\D/g, '');
+    const isCnpj = cleanDoc.length === 14;
+    const companyName = agendorData?.name || agendorData?.legalName || cnpjOuCpfBusca || 'Empresa Cliente';
     const emailContato = empregoFields?.emailContatoConfirmado || agendorData?.email || 'rafael.simao@jobz.com.br';
     const celularContato = empregoFields?.celularContatoConfirmado || agendorData?.phone || '—';
 
-    // 1. Tentar criar rascunho de vaga na API da Abler (POST /api/company/v1/vacancies)
+    let targetCustomerId: number | null = ablerCustomerId ? parseInt(String(ablerCustomerId), 10) : null;
+    let autoRegisteredNewCompany = false;
+
+    // 1. Se não temos customerId, consultar a Abler pelo CNPJ/CPF
+    if (!targetCustomerId && cleanDoc) {
+      try {
+        const queryParam = isCnpj ? `cnpj=${cleanDoc}` : `cpf=${cleanDoc}`;
+        const checkRes = await fetch(`${ABLER_BASE_URL}/api/company/v1/customers?${queryParam}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-API-INT-TOKEN': ABLER_API_TOKEN,
+          },
+          cache: 'no-cache'
+        });
+
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (Array.isArray(checkData?.data) && checkData.data.length > 0) {
+            targetCustomerId = checkData.data[0].id;
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao verificar empresa na Abler:', err);
+      }
+    }
+
+    // 2. Se a empresa NÃO existe na Abler, faz o cadastro automático com dados do Agendor
+    if (!targetCustomerId && cleanDoc) {
+      try {
+        const registerPayload = {
+          customer: {
+            corporate_name: companyName,
+            trading_name: companyName,
+            cnpj: isCnpj ? cleanDoc : null,
+            cpf: isCnpj ? null : cleanDoc,
+            active: true,
+            allow_access: false,
+            additional_info: `Cadastro Automático via Formulário Jobz. Contato: ${emailContato}`,
+            customer_contacts_attributes: [
+              {
+                name: companyName,
+                email: emailContato,
+                phone: celularContato.replace(/\D/g, ''),
+                allow_access: false
+              }
+            ]
+          }
+        };
+
+        const regRes = await fetch(`${ABLER_BASE_URL}/api/company/v1/customers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-API-INT-TOKEN': ABLER_API_TOKEN,
+          },
+          body: JSON.stringify(registerPayload)
+        });
+
+        if (regRes.ok) {
+          const regData = await regRes.json();
+          targetCustomerId = regData?.data?.id || regData?.id || null;
+          autoRegisteredNewCompany = true;
+        } else {
+          console.error(`Erro ao cadastrar empresa na Abler [${regRes.status}]:`, await regRes.text());
+        }
+      } catch (err) {
+        console.error('Exceção ao cadastrar empresa na Abler:', err);
+      }
+    }
+
+    // Fallback final: se não achou e não cadastrou, usa a conta principal Jobz (582)
+    if (!targetCustomerId) {
+      targetCustomerId = 582;
+    }
+
+    // 3. Criar rascunho de vaga na API da Abler (POST /api/company/v1/vacancies)
     let ablerVacancyId: string | number | null = null;
     let ablerErrorMsg: string | null = null;
-
-    // customer_id alvo (usar ID do cliente ou fallback para 582)
-    const targetCustomerId = (ablerCustomerId && !isNaN(parseInt(String(ablerCustomerId), 10)))
-      ? parseInt(String(ablerCustomerId), 10)
-      : 582;
 
     if (empregoFields?.tituloCargo) {
       try {
@@ -91,7 +165,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Formatar lista de benefícios com valores e frequência
+    // 4. Formatar lista de benefícios com valores e frequência
     const beneficiosListHtml = (empregoFields?.beneficios || []).map((bName: string) => {
       const valObj = (empregoFields?.valoresBeneficios || {})[bName];
       if (valObj && valObj.valor) {
@@ -100,7 +174,7 @@ export async function POST(request: NextRequest) {
       return `<li>${bName}</li>`;
     }).join('') || '<li>Nenhum informado</li>';
 
-    // 3. Disparar e-mail de notificação para rafael.simao@jobz.com.br
+    // 5. Disparar e-mail de notificação para rafael.simao@jobz.com.br
     let emailSent = false;
     try {
       if (SMTP_USER && SMTP_PASS) {
@@ -125,9 +199,14 @@ export async function POST(request: NextRequest) {
               <div style="background: #f8fafc; padding: 16px; border-radius: 12px; border-left: 4px solid #1e81fe; margin-bottom: 20px;">
                 <h2 style="margin: 0 0 4px; font-size: 18px; color: #0f172a;">${empregoFields?.tituloCargo || 'Vaga de Emprego'}</h2>
                 <p style="margin: 0; color: #475569; font-size: 14px;">Empresa: <strong>${companyName}</strong> (CNPJ/CPF: ${cnpjOuCpfBusca})</p>
+                ${autoRegisteredNewCompany ? '<p style="margin: 4px 0 0; color: #16a34a; font-size: 12px; font-weight: bold;">✨ Cadastro automático de nova empresa realizado na Abler!</p>' : ''}
               </div>
 
               <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 10px 0; font-weight: 600; color: #64748b;">ID Cliente na Abler:</td>
+                  <td style="padding: 10px 0; font-weight: 700; color: #0f172a;">${targetCustomerId}</td>
+                </tr>
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                   <td style="padding: 10px 0; font-weight: 600; color: #64748b;">Responsável Contato:</td>
                   <td style="padding: 10px 0; font-weight: 700; color: #0f172a;">${emailContato} • ${celularContato}</td>
@@ -195,6 +274,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ablerVacancyId,
+      targetCustomerId,
+      autoRegisteredNewCompany,
       emailSent,
       message: 'Vaga registrada com sucesso!'
     });
