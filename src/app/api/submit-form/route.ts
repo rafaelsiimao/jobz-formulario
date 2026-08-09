@@ -53,20 +53,18 @@ export async function POST(request: NextRequest) {
         const salaryValue = rawSalary ? (parseFloat(rawSalary) / 100).toFixed(2) : null;
 
         const ablerPayload = {
-          vacancy: {
-            customer_id: targetCustomerId,
-            title: empregoFields.tituloCargo,
-            contracting_regime: regime,
-            work_type: workType,
-            quantity: empregoFields.quantidadeVagas || 1,
-            seniority_level: seniority,
-            is_confidential: Boolean(empregoFields.vagaSigilosa),
-            status: 'draft',
-            salary_value: salaryValue,
-            mandatory_requirements: empregoFields.hardSkills || empregoFields.descricaoCargo || 'Ver ficha da vaga',
-            desirable_requirements: empregoFields.softSkills || '',
-            working_journey: `Segunda a Sexta (${empregoFields.horarioInicio || '08:00'} às ${empregoFields.horarioFim || '18:00'}) - Intervalo: ${empregoFields.tempoIntervalo || '01:00'}`
-          }
+          customer_id: targetCustomerId,
+          title: empregoFields.tituloCargo,
+          contracting_regime: regime,
+          work_type: workType,
+          quantity: empregoFields.quantidadeVagas || 1,
+          seniority_level: seniority,
+          is_confidential: Boolean(empregoFields.vagaSigilosa),
+          status: 'draft',
+          salary_value: salaryValue,
+          mandatory_requirements: empregoFields.hardSkills || empregoFields.descricaoCargo || 'Ver ficha da vaga',
+          desirable_requirements: empregoFields.softSkills || '',
+          working_journey: `Segunda a Sexta (${empregoFields.horarioInicio || '08:00'} às ${empregoFields.horarioFim || '18:00'}) - Intervalo: ${empregoFields.tempoIntervalo || '01:00'}`
         };
 
         const ablerRes = await fetch(`${ABLER_BASE_URL}/api/company/v1/vacancies`, {
