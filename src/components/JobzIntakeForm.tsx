@@ -1034,6 +1034,11 @@ export default function JobzIntakeForm() {
       <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-100">
         <div className="h-full bg-[var(--color-blue-jobz)] transition-all duration-500 ease-out" style={{ width: `${(currentStep / (totalSteps - 1)) * 100}%` }} />
       </div>
+
+      {/* Selo com Marca Jobz */}
+      <div className="flex justify-end mb-4">
+        <img src="/jobz-logo.svg" alt="Jobz" className="h-6 w-auto opacity-90" />
+      </div>
       
       {currentStep === 0 && renderStep0()}
       {currentStep === 1 && renderStep1()}

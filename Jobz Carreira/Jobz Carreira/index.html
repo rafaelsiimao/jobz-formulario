@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jobz Carreira - Brandbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@200;400;500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --noite:#F2F5F8;
+    --painel:#FAFAFC;
+    --card:#FFFFFF;
+    --azul:#1E81FE;
+    --azul-claro:#66A9FF;
+    --branco:#FAFAFC;
+    --texto:#111317;
+    --texto-2:#5F6673;
+    --texto-3:#8A94A3;
+    --papel:#F2F5F8;
+    --linha:#D7DEE7;
+    --linha-clara:#D7DEE7;
+    --escuro:#080B10;
+    --escuro-2:#121823;
+    --fonte:"Plus Jakarta Sans","DM Sans",sans-serif;
+    --mono:"JetBrains Mono","DM Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--noite);color:var(--texto);font-family:var(--fonte);-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opacity:.05;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
+  img{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  p,h1,h2,h3,h4{margin:0}
+  .shell{display:grid;grid-template-columns:268px 1fr;min-height:100vh}
+  .sidebar{position:sticky;top:0;height:100vh;border-right:1px solid var(--linha);background:rgba(250,250,252,.96);padding:38px 30px;display:flex;flex-direction:column;z-index:30}
+  .sidebar-logo{width:112px;margin-bottom:8px}
+  .version{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--texto-3)}
+  .side-nav{display:grid;gap:3px;margin-top:40px}
+  .side-nav a{display:flex;align-items:center;gap:10px;color:var(--texto-2);font-size:13.5px;padding:4px 0}
+  .side-nav a span{font-family:var(--mono);font-size:11px;color:rgba(102,169,255,.58);width:22px}
+  .side-nav a::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--azul);opacity:0;transition:opacity .18s}
+  .side-nav a.active,.side-nav a:hover{color:var(--texto)}
+  .side-nav a.active::before{opacity:1}
+  .side-foot{margin-top:auto;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--texto-3);text-transform:uppercase;letter-spacing:.08em}
+  .design-system-downloads{padding-top:14px;margin-bottom:16px;border-top:1px solid var(--linha)}
+  .design-system-downloads strong{display:block;margin-bottom:8px;color:var(--azul);font-size:9px;letter-spacing:.14em}
+  .download-links{display:flex;gap:8px}
+  .download-links a{color:var(--texto);border:1px solid var(--linha);padding:5px 8px;line-height:1;text-decoration:none}
+  .download-links a:hover{border-color:var(--azul);color:var(--azul)}
+  main{position:relative;overflow:hidden}
+  section{min-height:100vh;padding:118px clamp(40px,6vw,96px);border-top:1px solid var(--linha);position:relative}
+  section:nth-of-type(odd){background:var(--noite)}
+  section:nth-of-type(even){background:var(--painel)}
+  .content{max-width:1040px;position:relative;z-index:1}
+  #overview{border-top:0;display:flex;align-items:stretch;padding:64px clamp(40px,6vw,96px) 56px;overflow:hidden;background:var(--noite)}
+  #overview::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(17,19,23,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(17,19,23,.035) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
+  .overview-content{width:100%;max-width:none;min-height:calc(100vh - 120px);display:flex;flex-direction:column;justify-content:space-between}
+  .topline{display:flex;align-items:center;justify-content:space-between;gap:24px;font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--texto-2)}
+  .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--azul);margin-bottom:20px}
+  h1{font-size:clamp(34px,5vw,64px);line-height:1.04;font-weight:300;letter-spacing:-.025em;max-width:18ch;text-wrap:balance}
+  h1 strong,h2 strong,h3 strong{font-weight:800;color:var(--texto)}
+  h2{font-size:clamp(30px,4.2vw,54px);line-height:1.06;font-weight:800;letter-spacing:-.02em;max-width:18ch}
+  h2 span{color:var(--azul-claro)}
+  h3{font-size:clamp(22px,2.4vw,34px);line-height:1.1;font-weight:700;letter-spacing:-.01em}
+  .lead{font-size:17px;line-height:1.75;color:var(--texto-2);max-width:64ch}
+  .muted{color:var(--texto-2)}
+  .mono{font-family:var(--mono)}
+  .brand-mark{width:min(430px,82vw);margin:0 0 44px}
+  .meta-grid{display:flex;flex-wrap:nowrap;gap:48px;border-top:1px solid var(--linha);padding-top:22px;background:transparent}
+  .meta-item{flex:1;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--texto)}
+  .meta-item span{display:block;color:var(--texto-3);margin-bottom:6px;text-transform:uppercase}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha);margin-top:48px}
+  .card{background:var(--card);padding:28px;min-height:220px;box-shadow:0 18px 50px rgba(17,19,23,.06)}
+  .card .num{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--azul-claro);margin-bottom:18px}
+  .card p{margin-top:14px;font-size:14.5px;line-height:1.62;color:var(--texto-2)}
+  .split{display:grid;grid-template-columns:.88fr 1.12fr;gap:56px;align-items:start}
+  .text-stack{display:grid;gap:22px}
+  .text-stack p{font-size:16px;line-height:1.76;color:var(--texto-2)}
+  .logo-stage{position:relative;overflow:hidden;background:radial-gradient(circle at 72% 70%,rgba(30,129,254,.13),transparent 38%),linear-gradient(180deg,#FFFFFF 0%,var(--papel) 100%);border:1px solid var(--linha);min-height:390px;display:flex;align-items:center;justify-content:center;padding:80px;margin-top:48px}
+  .logo-stage::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(17,19,23,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(17,19,23,.04) 1px,transparent 1px);background-size:42px 42px}
+  .logo-stage img{position:relative;z-index:1;width:min(430px,74vw)}
+  .caption{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-3);margin:12px 0 48px}
+  .logo-system{display:grid;grid-template-columns:1.25fr .95fr;gap:1px;background:var(--linha);border:1px solid var(--linha);margin:44px 0}
+  .panel{background:var(--card);padding:42px;position:relative;overflow:hidden;min-height:330px}
+  .panel.grid{background-color:var(--card);background-image:linear-gradient(rgba(30,129,254,.14) 1px,transparent 1px),linear-gradient(90deg,rgba(30,129,254,.14) 1px,transparent 1px);background-size:28px 28px}
+  .label{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--azul-claro)}
+  .panel img{width:min(340px,80%);margin:48px auto 0}
+  .panel p,.device p{font-size:14.5px;line-height:1.68;color:var(--texto-2);margin-top:28px}
+  .safe-zone{margin-top:36px;padding:18%;border:1px dashed rgba(30,129,254,.38);position:relative}
+  .safe-zone::before{content:"= altura do J";position:absolute;top:10px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--texto-3);white-space:nowrap}
+  .safe-zone img{width:100%;margin:0}
+  .size-strip{display:flex;flex-wrap:wrap;align-items:flex-end;gap:52px;border:1px solid var(--linha);background:var(--card);padding:36px 42px;margin-bottom:44px}
+  .size-strip img{height:auto;margin-top:14px}
+  .w120{width:120px}.w72{width:72px}
+  .size-strip p{max-width:34ch;margin-left:auto;font-size:14.5px;line-height:1.65;color:var(--texto-2)}
+  .variants{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--linha);border:1px solid var(--linha)}
+  .variant{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:var(--escuro)}
+  .variant.blue{background:var(--azul)}
+  .variant.light{background:var(--branco)}
+  .variant.paper{background:var(--papel)}
+  .variant img{width:68%;max-width:210px}
+  .variant .mini{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(245,248,255,.68);text-align:center}
+  .variant.light .mini,.variant.paper .mini{color:#5F6673}
+  .swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha);margin-top:44px}
+  .swatch{background:var(--card);min-height:180px;display:flex;flex-direction:column;border:0;color:inherit;text-align:left;cursor:pointer}
+  .chip{height:110px}
+  .swatch div:last-child{padding:18px}
+  .swatch strong{display:block;font-size:15px}
+  .swatch span{display:block;margin-top:6px;font-family:var(--mono);font-size:12px;color:var(--texto-2)}
+  .ratio{display:flex;height:48px;border:1px solid var(--linha);margin-top:28px;overflow:hidden}
+  .ratio div{display:flex;align-items:center;padding:0 14px;font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+  .type-row{display:grid;grid-template-columns:250px 1fr;gap:40px;border-top:1px solid var(--linha);padding:34px 0}
+  .type-row:first-of-type{margin-top:42px}
+  .family{font-size:18px;font-weight:800;color:var(--texto)}
+  .use{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--texto-3);margin-top:8px;line-height:1.55}
+  .specimen-display{font-size:clamp(34px,5vw,64px);line-height:1.02;font-weight:800;color:var(--texto)}
+  .specimen-text{font-size:17px;line-height:1.72;color:var(--texto-2);max-width:64ch}
+  .specimen-mono{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--azul-claro)}
+  .graphic-hero{position:relative;min-height:440px;margin-top:44px;padding:44px;background:radial-gradient(circle at 78% 78%,rgba(30,129,254,.18),transparent 36%),linear-gradient(180deg,#FFFFFF 0%,var(--papel) 100%);border:1px solid var(--linha);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+  .graphic-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(17,19,23,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(17,19,23,.035) 1px,transparent 1px);background-size:40px 40px}
+  .corner{position:absolute;right:-120px;bottom:-120px;width:460px;height:460px;background:var(--azul);border-radius:460px 0 0 0;filter:drop-shadow(0 0 70px rgba(30,129,254,.45))}
+  .crop{position:absolute;width:18px;height:18px;border-color:rgba(17,19,23,.34);border-style:solid}
+  .crop.tl{top:18px;left:18px;border-width:1px 0 0 1px}
+  .crop.tr{top:18px;right:18px;border-width:1px 1px 0 0}
+  .crop.bl{bottom:18px;left:18px;border-width:0 0 1px 1px}
+  .crop.br{bottom:18px;right:18px;border-width:0 1px 1px 0}
+  .graphic-copy{position:relative;z-index:1;max-width:34ch}
+  .graphic-copy h3{font-size:clamp(28px,3.8vw,46px);line-height:1.05;font-weight:300}
+  .graphic-copy p{font-size:14.5px;line-height:1.68;color:var(--texto-2);margin-top:18px}
+  .devices{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha)}
+  .device{background:var(--card);padding:34px;min-height:310px;display:flex;flex-direction:column}
+  .device-stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;margin:22px 0}
+  .journey{width:100%;display:grid;gap:10px}
+  .journey span{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--texto-2)}
+  .journey span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--azul)}
+  .job-card{width:86%;background:var(--papel);color:#111317;border-radius:12px;padding:22px;position:relative;overflow:hidden}
+  .job-card::after{content:"";position:absolute;right:-22px;top:-22px;width:84px;height:84px;border-radius:0 0 0 84px;background:var(--azul)}
+  .job-card b{display:block;font-size:22px;line-height:1.05;margin:8px 0}
+  .job-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+  .job-tags span{font-family:var(--mono);font-size:9.5px;border:1px solid var(--linha-clara);border-radius:999px;padding:6px 8px;color:#5F6673}
+  .number strong{font-size:64px;line-height:.92;color:var(--texto);display:block}
+  .number strong span{color:var(--azul)}
+  .number small{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--texto-2)}
+  .apps{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;margin-top:50px}
+  .mock{border:1px solid var(--linha);background:var(--card);overflow:hidden;position:relative}
+  .site-mock{border-radius:10px;background:var(--branco);color:#111317}
+  .browser-bar{height:45px;border-bottom:1px solid var(--linha-clara);display:flex;align-items:center;gap:8px;padding:0 16px;background:#E9EEF4}
+  .dot{width:10px;height:10px;border-radius:50%;background:#CAD3DF}
+  .site-body{padding:44px;min-height:330px;background:linear-gradient(180deg,#fff,var(--papel))}
+  .site-body img{width:128px;margin-bottom:72px}
+  .site-body h3{font-size:clamp(28px,3.8vw,48px);max-width:14ch;color:#111317}
+  .site-body p{font-size:15px;line-height:1.65;color:#5F6673;max-width:42ch;margin-top:18px}
+  .social-grid{display:grid;grid-template-columns:1fr 170px;gap:16px}
+  .post-img{aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--escuro)}
+  .post-img img,.story-img img{width:100%;height:100%;object-fit:cover}
+  .story-img{aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:var(--papel)}
+  .reference-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha);margin-top:48px}
+  .reference-card{background:var(--card);display:flex;flex-direction:column;min-height:100%;overflow:hidden}
+  .reference-media{aspect-ratio:4/5;background:#FFFFFF;overflow:hidden}
+  .reference-media.wide{aspect-ratio:1.35}
+  .reference-media img{width:100%;height:100%;object-fit:contain}
+  .reference-copy{padding:20px;display:grid;gap:10px}
+  .reference-copy strong{font-size:15px}
+  .reference-copy p{font-size:13.5px;line-height:1.55;color:var(--texto-2);margin:0}
+  .reference-note{margin-top:28px;border:1px solid var(--linha);background:rgba(255,255,255,.58);padding:22px 24px;font-size:14.5px;line-height:1.65;color:var(--texto-2)}
+  .doc-card{margin-top:28px;background:var(--branco);color:#111317;border:1px solid var(--linha-clara);border-radius:10px;padding:30px}
+  .doc-card img{width:112px;margin-bottom:34px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:28px}
+  .stat{border:1px solid var(--linha-clara);border-radius:8px;padding:14px;font-family:var(--mono);font-size:10px;color:#5F6673}
+  .stat b{display:block;font-family:var(--fonte);font-size:24px;color:#111317;margin-bottom:3px}
+  .misuse{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--linha);border:1px solid var(--linha);margin-top:48px}
+  .mis{background:var(--card)}
+  .mis-box{height:150px;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--papel);overflow:hidden}
+  .mis-copy{border-top:1px solid var(--linha);padding:14px;display:flex;gap:10px;font-size:12px;line-height:1.4;color:var(--texto-2)}
+  .x{font-family:var(--mono);font-weight:700;color:#FF6B6B}
+  .foot{display:flex;justify-content:space-between;gap:30px;padding:52px clamp(32px,6vw,96px);border-top:1px solid var(--linha);font-family:var(--mono);font-size:11px;line-height:1.8;color:var(--texto-3)}
+  .foot img{width:148px;margin-bottom:18px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--escuro);color:var(--branco);font-family:var(--mono);font-size:12px;padding:11px 18px;opacity:0;pointer-events:none;transition:.22s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:980px){
+    .shell{grid-template-columns:1fr}
+    .sidebar{position:relative;height:auto}
+    .side-nav{grid-template-columns:repeat(2,1fr)}
+    .topline{flex-direction:column;align-items:flex-start}
+    .split,.logo-system,.apps{grid-template-columns:1fr}
+    .cards,.swatches,.variants,.devices,.misuse,.meta-grid,.reference-grid{grid-template-columns:1fr 1fr}
+    .meta-grid{flex-wrap:wrap}
+  }
+  @media(max-width:640px){
+    section,#overview{padding:72px 20px}
+    .side-nav,.cards,.swatches,.variants,.devices,.misuse,.meta-grid,.social-grid,.stats,.reference-grid{grid-template-columns:1fr}
+    .size-strip p{margin-left:0}
+    .foot{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div>
+      <a href="#overview"><img class="sidebar-logo" src="assets/jobz-carreira-logo-preto.svg" alt="Jobz Carreira" /></a>
+      <div class="version">Brand Book v1.0</div>
+      <nav class="side-nav" aria-label="Navegação do manual">
+        <a href="#overview"><span>00</span>Visão geral</a>
+        <a href="#marca"><span>01</span>A marca</a>
+        <a href="#rationale"><span>02</span>Rationale</a>
+        <a href="#logo"><span>03</span>Logotipo</a>
+        <a href="#cor"><span>04</span>Cor</a>
+        <a href="#tipografia"><span>05</span>Tipografia</a>
+        <a href="#grafismos"><span>06</span>Grafismos</a>
+        <a href="#aplicacoes"><span>07</span>Aplicações</a>
+        <a href="#referencias"><span>08</span>Referências</a>
+        <a href="#usos"><span>09</span>Usos incorretos</a>
+      </nav>
+    </div>
+    <div class="side-foot">
+      <div class="design-system-downloads">
+        <strong>Design system</strong>
+        <div class="download-links">
+          <a href="assets/design-system/jobz-carreira.design-system.json" download>JSON</a>
+          <a href="assets/design-system/jobz-carreira.design-system.md" download>MARKDOWN</a>
+        </div>
+      </div>
+      Jobz Carreira<br>Documento interno<br>Julho - 2026
+    </div>
+  </aside>
+
+  <main>
+    <section id="overview">
+      <div class="content overview-content">
+        <div class="topline"><span>Documento de identidade visual</span><span>Setor - Carreira / Recrutamento</span></div>
+        <div>
+          <div class="kicker">Identidade visual</div>
+          <img class="brand-mark" src="assets/jobz-carreira-logo-preto.svg" alt="Jobz Carreira" />
+          <h1>Vagas claras para talentos e empresas <strong>se encontrarem melhor.</strong></h1>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-item"><span>Categoria</span>Recrutamento,<br>seleção e carreira</div>
+          <div class="meta-item"><span>Personalidade</span>Digital,<br>acessível e confiável</div>
+          <div class="meta-item"><span>Núcleo cromático</span>Azul Jobz +<br>base profissional</div>
+          <div class="meta-item"><span>Aplicação</span>Vagas, site,<br>redes e relatórios</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="marca">
+      <div class="content">
+        <div class="kicker">01 / A marca</div>
+        <h2>Uma marca para aproximar <span>talentos e empresas.</span></h2>
+        <div class="cards">
+          <div class="card"><div class="num">Categoria</div><h3>Recrutamento, seleção e carreira.</h3><p>A marca organiza oportunidades, processos seletivos, estágio, emprego e crescimento profissional.</p></div>
+          <div class="card"><div class="num">Papel</div><h3>Clareza na jornada.</h3><p>A Jobz Carreira ajuda candidatos a entenderem próximos passos e empresas a comunicarem vagas com mais critério.</p></div>
+          <div class="card"><div class="num">Tom</div><h3>Próxima, útil e direta.</h3><p>O visual deve ser acessível sem perder seriedade. Fala com pessoas, mas sustenta confiança para RH e empresas.</p></div>
+          <div class="card"><div class="num">Uso</div><h3>Aplicação diária.</h3><p>O manual orienta posts de vaga, stories, páginas de oportunidade, apresentações e relatórios de seleção.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="rationale">
+      <div class="content split">
+        <div>
+          <div class="kicker">02 / Rationale</div>
+          <h2>Por que a marca se parece com isto.</h2>
+        </div>
+        <div class="text-stack">
+          <p><strong>Clareza para quem busca uma vaga.</strong> A identidade precisa funcionar rápido em feeds, stories, páginas de oportunidade e materiais de seleção. Hierarquia visual simples reduz ruído e facilita decisão.</p>
+          <p><strong>Ponte entre candidato e empresa.</strong> A marca circula entre dois públicos: pessoas procurando oportunidade e empresas querendo contratar melhor. Por isso combina proximidade, organização e confiança.</p>
+          <p><strong>Azul ativo, base profissional.</strong> O azul traz movimento e sinaliza ação. Preto, cinzas e branco frio sustentam leitura, deixam o sistema mais institucional e evitam uma estética informal demais.</p>
+          <p><strong>Jornada como sistema gráfico.</strong> Caminhos, etapas, cards e marcadores traduzem descoberta, candidatura, triagem, entrevista e contratação. O visual acompanha a trajetória sem precisar explicar demais.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="logo">
+      <div class="content">
+        <div class="kicker">03 / Logotipo</div>
+        <h2>A assinatura e seu sistema.</h2>
+        <div class="logo-stage"><img src="assets/jobz-carreira-logo-preto.svg" alt="Logotipo Jobz Carreira" /></div>
+        <div class="caption">FIG.01 - Logotipo principal - uso preferencial em fundos claros e materiais institucionais</div>
+        <div class="logo-system">
+          <div class="panel grid">
+            <div class="label">Construção em grade</div>
+            <img src="assets/jobz-carreira-logo-preto.svg" alt="Logotipo Jobz Carreira em grade de construção" />
+            <p>A grade serve como referência de precisão. Nunca redesenhe as letras ou altere proporções: use sempre o arquivo vetorial oficial.</p>
+          </div>
+          <div class="panel">
+            <div class="label">Área de proteção</div>
+            <div class="safe-zone"><img src="assets/jobz-carreira-logo-preto.svg" alt="Área de proteção do logotipo Jobz Carreira" /></div>
+            <p>A margem livre ao redor deve ser, no mínimo, equivalente à altura da letra J. Nada de texto, imagem ou borda deve invadir essa zona.</p>
+          </div>
+        </div>
+        <div class="caption">Tamanho mínimo</div>
+        <div class="size-strip">
+          <div><div class="label">Digital - mínimo 120 px</div><img class="w120" src="assets/jobz-carreira-logo-preto.svg" alt="Logotipo em 120 pixels" /></div>
+          <div><div class="label">Mínimo absoluto - 72 px</div><img class="w72" src="assets/jobz-carreira-logo-preto.svg" alt="Logotipo em 72 pixels" /></div>
+          <p>Abaixo de 72 px de largura, use o favicon ou monograma J para preservar leitura em perfis, favicons e assinaturas reduzidas.</p>
+        </div>
+        <div class="caption">Variações autorizadas</div>
+        <div class="variants">
+          <div class="variant"><img src="assets/jobz-carreira-logo.svg" alt="Logotipo principal escuro" /><span class="mini">Principal - escuro</span></div>
+          <div class="variant blue"><img src="assets/jobz-carreira-logo-branco.svg" alt="Logotipo branco sobre azul" /><span class="mini">Branco - sobre azul</span></div>
+          <div class="variant paper"><img src="assets/jobz-carreira-logo-preto.svg" alt="Logotipo preto sobre claro" /><span class="mini">Preta - claro</span></div>
+          <div class="variant light"><img src="assets/jobz-carreira-logo-mono-preto.svg" alt="Logotipo monocromático preto" /><span class="mini">Monocromática</span></div>
+          <div class="variant paper"><img style="width:62px" src="assets/jobz-carreira-favicon.svg" alt="Favicon Jobz Carreira" /><span class="mini">Favicon - reduzida</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cor">
+      <div class="content">
+        <div class="kicker">04 / Cor</div>
+        <h2>Azul ativo, base profissional.</h2>
+        <p class="lead" style="margin-top:22px">A paleta mantém o azul como assinatura principal, enquanto preto, cinzas e branco frio organizam informação e preservam confiança em materiais para candidatos, empresas e RH.</p>
+        <div class="swatches">
+          <button class="swatch" data-hex="#1E81FE"><span class="chip" style="background:#1E81FE"></span><div><strong>Azul Jobz</strong><span>#1E81FE</span></div></button>
+          <button class="swatch" data-hex="#111317"><span class="chip" style="background:#111317"></span><div><strong>Preto Institucional</strong><span>#111317</span></div></button>
+          <button class="swatch" data-hex="#5F6673"><span class="chip" style="background:#5F6673"></span><div><strong>Cinza Texto</strong><span>#5F6673</span></div></button>
+          <button class="swatch" data-hex="#F2F5F8"><span class="chip" style="background:#F2F5F8"></span><div><strong>Cinza Fundo</strong><span>#F2F5F8</span></div></button>
+          <button class="swatch" data-hex="#FAFAFC"><span class="chip" style="background:#FAFAFC"></span><div><strong>Branco Frio</strong><span>#FAFAFC</span></div></button>
+        </div>
+        <div class="ratio">
+          <div style="background:#F2F5F8;color:#111317;flex:50">50% base clara</div>
+          <div style="background:#111317;color:#FAFAFC;flex:30">30% preto</div>
+          <div style="background:#1E81FE;color:#fff;flex:20">20% azul</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tipografia">
+      <div class="content">
+        <div class="kicker">05 / Tipografia</div>
+        <h2>Uma voz clara, próxima e digital.</h2>
+        <p class="lead" style="margin-top:22px">A Jobz Carreira usa Plus Jakarta Sans como fonte principal: aberta, geométrica e amigável. A JetBrains Mono organiza rótulos, dados, status e informações de seleção.</p>
+        <div class="type-row"><div><div class="family">Plus Jakarta Sans</div><div class="use">display - capas - posts</div></div><p class="specimen-display">Vagas mais claras. Caminhos mais possíveis.</p></div>
+        <div class="type-row"><div><div class="family">Plus Jakarta Sans</div><div class="use">texto - site - relatórios</div></div><p class="specimen-text">Encontrar uma oportunidade exige clareza. A Jobz Carreira aproxima candidatos e empresas com comunicação objetiva, processos mais simples e uma marca preparada para falar de vagas, seleção e crescimento profissional.</p></div>
+        <div class="type-row"><div><div class="family">JetBrains Mono</div><div class="use">dados - tags - etapas</div></div><p class="specimen-mono">VAGA 024 - ESTÁGIO · CANDIDATURAS ABERTAS · TRIAGEM 2026.Q2</p></div>
+      </div>
+    </section>
+
+    <section id="grafismos">
+      <div class="content">
+        <div class="kicker">06 / Grafismos</div>
+        <h2>Sistema gráfico de oportunidades.</h2>
+        <p class="lead" style="margin-top:22px">Os elementos auxiliares nascem da jornada de candidatura: caminhos, etapas, cards de vaga e sinais de seleção. O detalhe azul do J funciona como marcador proprietário.</p>
+        <div class="graphic-hero">
+          <span class="crop tl"></span><span class="crop tr"></span><span class="crop bl"></span><span class="crop br"></span>
+          <span class="corner"></span>
+          <div class="label">Sinal em escala - elemento primário</div>
+          <div class="graphic-copy"><h3>O sinal azul marca <strong>o próximo passo.</strong></h3><p>Em escala, ele vira recorte, ponto de atenção e chamada visual para vagas, candidaturas e etapas de seleção.</p></div>
+        </div>
+        <div class="caption">Uso sugerido - canto inferior direito - sangria de 20%</div>
+        <div class="devices">
+          <div class="device"><div class="label">Trilha de candidatura</div><div class="device-stage"><div class="journey"><span>Vaga publicada</span><span>Candidato inscrito</span><span>Entrevista agendada</span></div></div><p>Linhas e pontos representam movimento: encontrar vaga, candidatar-se, passar por triagem e avançar para entrevista.</p></div>
+          <div class="device"><div class="label">Card de vaga</div><div class="device-stage"><div class="job-card"><span class="mono" style="font-size:10px;color:#1E81FE">Vaga aberta</span><b>Estágio em Marketing</b><p style="color:#5F6673;font-size:13px">Card-base para posts, site e materiais de divulgação.</p><div class="job-tags"><span>Presencial</span><span>Ribeirão Preto</span><span>Aberta</span></div></div></div><p>Cards concentram cargo, contexto e status sem sobrecarregar a leitura.</p></div>
+          <div class="device"><div class="label">Tratamento de números</div><div class="device-stage"><div class="number"><strong>42<span></span></strong><small>Candidatos inscritos</small></div></div><p>Números grandes ajudam relatórios de seleção, stories, carrosséis e apresentações para empresas.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="aplicacoes">
+      <div class="content">
+        <div class="kicker">07 / Aplicações</div>
+        <h2>A marca em uso.</h2>
+        <p class="lead" style="margin-top:22px">Foco nos contextos que a Jobz Carreira usa todos os dias: post de vaga, story de candidatura, site de oportunidades e relatório de seleção.</p>
+        <div class="apps">
+          <div>
+            <div class="caption">A. Site de oportunidades</div>
+            <div class="mock site-mock">
+              <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="mono muted" style="margin-left:12px;font-size:11px;color:#5F6673">jobzcarreira.com.br</span></div>
+              <div class="site-body"><img src="assets/jobz-carreira-logo-preto.svg" alt="Jobz Carreira" /><h3>Vagas mais claras para candidatos mais preparados.</h3><p>Uma experiência de candidatura objetiva, com oportunidades organizadas e comunicação confiável para empresas e talentos.</p></div>
+            </div>
+            <div class="doc-card">
+              <img src="assets/jobz-carreira-logo-preto.svg" alt="Jobz Carreira" />
+              <span class="mono" style="font-size:11px;color:#1E81FE;text-transform:uppercase;letter-spacing:.12em">Relatório de Seleção · 2026</span>
+              <h3 style="color:#111317;margin-top:14px">Pipeline de candidatos</h3>
+              <div class="stats"><div class="stat"><b>42</b>Inscritos</div><div class="stat"><b>12</b>Em triagem</div><div class="stat"><b>5</b>Entrevistas</div></div>
+            </div>
+          </div>
+          <div>
+            <div class="caption">B. Redes sociais</div>
+            <div class="social-grid">
+              <div class="post-img"><img src="assets/jobz-carreira-post-vaga-bg.png" alt="Post de vaga da Jobz Carreira" /></div>
+              <div class="story-img"><img src="assets/jobz-carreira-story-emprego.png" alt="Story de candidatura da Jobz Carreira" /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="referencias">
+      <div class="content">
+        <div class="kicker">08 / Referências</div>
+        <h2>Galeria de inspiração para a marca.</h2>
+        <p class="lead" style="margin-top:22px">Estas referências orientam a direção visual da Jobz Carreira em redes sociais, apresentações, documentos e páginas digitais. Elas não devem ser copiadas literalmente; servem como repertório de composição, hierarquia, metáfora visual e uso do azul.</p>
+        <div class="reference-grid">
+          <article class="reference-card">
+            <div class="reference-media wide"><img src="assets/jobz-carreira-ref-01-social-grid.png" alt="Referência de grid para carrosséis e posts de produto" /></div>
+            <div class="reference-copy"><div class="label">Social media</div><strong>Grid de peças seriadas.</strong><p>Boa referência para campanhas de vagas, benefícios e etapas do processo seletivo, com repetição visual e chamadas diretas.</p></div>
+          </article>
+          <article class="reference-card">
+            <div class="reference-media"><img src="assets/jobz-carreira-ref-02-busca-clareza.png" alt="Referência conceitual de busca e descoberta" /></div>
+            <div class="reference-copy"><div class="label">Descoberta</div><strong>Busca, encontro e clareza.</strong><p>Ajuda a traduzir visualmente a ideia de encontrar a oportunidade certa em meio a muitas opções.</p></div>
+          </article>
+          <article class="reference-card">
+            <div class="reference-media"><img src="assets/jobz-carreira-ref-03-metafora-diferenciacao.png" alt="Referência de metáfora visual para diferenciação de marca" /></div>
+            <div class="reference-copy"><div class="label">Metáfora</div><strong>Destaque em cenário competitivo.</strong><p>O azul pode funcionar como ponto de escolha, contraste e vantagem em materiais para candidatos e empresas.</p></div>
+          </article>
+          <article class="reference-card">
+            <div class="reference-media"><img src="assets/jobz-carreira-ref-04-sistema-operacional.png" alt="Referência de composição com sistema de pilares e recursos" /></div>
+            <div class="reference-copy"><div class="label">Sistema</div><strong>Pilares organizados em cena.</strong><p>Inspira peças sobre trilhas, serviços, etapas de seleção e soluções para RH com linguagem clara e modular.</p></div>
+          </article>
+          <article class="reference-card">
+            <div class="reference-media"><img src="assets/jobz-carreira-ref-05-placas-direcao.png" alt="Referência com placas direcionais azuis" /></div>
+            <div class="reference-copy"><div class="label">Direção</div><strong>Caminhos e decisões.</strong><p>Combina com narrativas de carreira: escolha de vaga, mudança profissional, próximo passo e orientação.</p></div>
+          </article>
+          <article class="reference-card">
+            <div class="reference-media"><img src="assets/jobz-carreira-ref-06-chave-oportunidade.png" alt="Referência de chave e peça de encaixe para oportunidade" /></div>
+            <div class="reference-copy"><div class="label">Oportunidade</div><strong>Encaixe entre talento e vaga.</strong><p>Reforça a metáfora de conexão: empresa, candidato e vaga precisam se encaixar com clareza.</p></div>
+          </article>
+        </div>
+        <div class="reference-note"><strong>Direção prática:</strong> priorizar fundo claro, azul como destaque principal, objetos ou interfaces com leitura imediata, títulos grandes e uma única ideia visual por peça.</div>
+      </div>
+    </section>
+
+    <section id="usos">
+      <div class="content">
+        <div class="kicker">09 / Usos incorretos</div>
+        <h2>O que evitar na aplicação da marca.</h2>
+        <div class="misuse">
+          <div class="mis"><div class="mis-box"><img style="width:150px;transform:skewX(-12deg)" src="assets/jobz-carreira-logo-preto.svg" alt="" /></div><div class="mis-copy"><span class="x">x</span><p>Não inclinar nem distorcer.</p></div></div>
+          <div class="mis"><div class="mis-box"><span style="font-size:20px;font-weight:800;color:#7A3DF2">Jobz Carreira</span></div><div class="mis-copy"><span class="x">x</span><p>Não trocar o azul principal.</p></div></div>
+          <div class="mis"><div class="mis-box" style="background:linear-gradient(120deg,#f9d423,#ff4e50)"><img style="width:140px" src="assets/jobz-carreira-logo-branco.svg" alt="" /></div><div class="mis-copy"><span class="x">x</span><p>Não usar sobre fundos ruidosos.</p></div></div>
+          <div class="mis"><div class="mis-box"><img style="width:150px;letter-spacing:.18em" src="assets/jobz-carreira-logo-preto.svg" alt="" /></div><div class="mis-copy"><span class="x">x</span><p>Não alterar espaçamento ou proporção.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div><img src="assets/jobz-carreira-logo-preto.svg" alt="Jobz Carreira" />Brandbook - versão 1.0</div>
+      <div>Recrutamento, seleção, emprego e estágio.<br>Logo oficial, paleta definida e sistema pronto para aplicação.</div>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast">Código HEX copiado</div>
+<script>
+  const links = Array.from(document.querySelectorAll(".side-nav a"));
+  const sections = links.map((link) => document.querySelector(link.getAttribute("href"))).filter(Boolean);
+  const setActive = () => {
+    const marker = window.scrollY + window.innerHeight * 0.36;
+    const current = sections.reduce((active, section) => section.offsetTop <= marker ? section : active, sections[0]);
+    links.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === `#${current.id}`));
+  };
+  document.addEventListener("scroll", setActive, { passive: true });
+  window.addEventListener("resize", setActive);
+  setActive();
+
+  const toast = document.getElementById("toast");
+  let timer;
+  document.querySelectorAll(".swatch").forEach((swatch) => {
+    swatch.addEventListener("click", () => {
+      const hex = swatch.dataset.hex;
+      if (navigator.clipboard) navigator.clipboard.writeText(hex);
+      toast.textContent = `${hex} copiado`;
+      toast.classList.add("show");
+      clearTimeout(timer);
+      timer = setTimeout(() => toast.classList.remove("show"), 1300);
+    });
+  });
+</script>
+</body>
+</html>

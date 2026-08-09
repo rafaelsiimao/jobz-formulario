@@ -1,0 +1,103 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "Jobz Carreira - Design System",
+  "version": "1.0",
+  "language": "pt-BR",
+  "reference": "Estrutura de documentação inspirada no DESIGN-airbnb.md; tokens e identidade exclusivos da Jobz Carreira.",
+  "brand": {
+    "name": "Jobz Carreira",
+    "category": "Recrutamento, seleção, emprego e estágio",
+    "purpose": "Aproximar talentos e empresas com clareza, organização e confiança em cada etapa.",
+    "personality": ["clara", "próxima", "digital", "profissional"]
+  },
+  "principles": [
+    { "name": "Clareza antes de tudo", "description": "Vagas, dados e próximas etapas devem ser compreendidos sem esforço." },
+    { "name": "Azul que orienta", "description": "O azul Jobz destaca ações, status e pontos importantes da jornada." },
+    { "name": "Informação em movimento", "description": "Caminhos, cards e marcadores traduzem a progressão de uma candidatura." },
+    { "name": "Proximidade profissional", "description": "A comunicação acolhe pessoas sem perder objetividade e confiança." }
+  ],
+  "colors": {
+    "blueJobz": { "value": "#1E81FE", "role": "Ações, links, status ativos e sinal proprietário" },
+    "blueLight": { "value": "#66A9FF", "role": "Destaques secundários e metadados" },
+    "blackInstitutional": { "value": "#111317", "role": "Texto principal e contraste institucional" },
+    "textSecondary": { "value": "#5F6673", "role": "Textos corridos e informações complementares" },
+    "textTertiary": { "value": "#8A94A3", "role": "Legendas, estados sutis e metadados" },
+    "backgroundPrimary": { "value": "#F2F5F8", "role": "Fundo predominante" },
+    "surface": { "value": "#FAFAFC", "role": "Superfícies claras e branco frio" },
+    "card": { "value": "#FFFFFF", "role": "Cards e documentos" },
+    "line": { "value": "#D7DEE7", "role": "Bordas, grids e divisões" },
+    "dark": { "value": "#080B10", "role": "Fundos de alto contraste" },
+    "darkSurface": { "value": "#121823", "role": "Superfícies escuras" }
+  },
+  "colorDistribution": [
+    { "token": "backgroundPrimary", "share": "50%", "usage": "Base clara" },
+    { "token": "blackInstitutional", "share": "30%", "usage": "Texto e contraste" },
+    { "token": "blueJobz", "share": "20%", "usage": "Ações e destaques" }
+  ],
+  "typography": {
+    "familyPrimary": { "family": "Plus Jakarta Sans, DM Sans, sans-serif", "usage": "Títulos, textos, site, relatórios e campanhas" },
+    "familyMono": { "family": "JetBrains Mono, DM Mono, monospace", "usage": "Dados, tags, etapas, status e metadados" },
+    "display": { "family": "Plus Jakarta Sans, DM Sans, sans-serif", "weight": 300, "emphasisWeight": 800, "size": "clamp(34px, 5vw, 64px)", "lineHeight": 1.04, "letterSpacing": "0", "usage": "Capas, grandes manchetes e chamadas" },
+    "heading": { "family": "Plus Jakarta Sans, DM Sans, sans-serif", "weight": 300, "emphasisWeight": 800, "size": "clamp(31px, 4.35vw, 58px)", "lineHeight": 1.05, "letterSpacing": "0", "usage": "Títulos de seção" },
+    "body": { "family": "Plus Jakarta Sans, DM Sans, sans-serif", "weight": 400, "size": "17px", "lineHeight": 1.72, "letterSpacing": "0", "usage": "Textos de vagas, materiais e site" },
+    "label": { "family": "JetBrains Mono, DM Mono, monospace", "weight": 400, "size": "10.5px", "lineHeight": 1.7, "letterSpacing": "0.08em", "textTransform": "uppercase", "usage": "Status, tags, etapas, dados e legendas" }
+  },
+  "spacing": {
+    "baseUnit": "4px",
+    "xxs": "2px",
+    "xs": "4px",
+    "sm": "8px",
+    "md": "12px",
+    "base": "16px",
+    "lg": "24px",
+    "xl": "32px",
+    "xxl": "48px",
+    "section": "64px",
+    "contentPadding": "clamp(40px, 6vw, 96px)",
+    "sectionPadding": "118px"
+  },
+  "radii": { "none": "0px", "card": "8px", "document": "12px", "pill": "999px" },
+  "effects": {
+    "grid": "linhas de 1px em rgba(17,19,23,.035), módulo de 40px ou 64px",
+    "noise": "fractal noise sutil em 5% de opacidade, aplicado à página",
+    "blueGlow": "drop-shadow(0 0 70px rgba(30,129,254,.45))",
+    "focusRing": "0 0 0 3px rgba(30,129,254,.24)"
+  },
+  "layout": {
+    "sidebar": { "width": "268px", "padding": "38px 30px" },
+    "contentMaxWidth": "1040px",
+    "sectionPadding": "118px clamp(40px, 6vw, 96px)",
+    "mobileSectionPadding": "72px 26px",
+    "breakpoints": { "tablet": "980px", "mobile": "640px" }
+  },
+  "identity": {
+    "logos": [
+      { "name": "Logotipo principal", "path": "assets/jobz-carreira-logo-preto.svg", "usage": "Fundos claros e materiais institucionais" },
+      { "name": "Logotipo escuro", "path": "assets/jobz-carreira-logo.svg", "usage": "Fundos escuros" },
+      { "name": "Logotipo branco", "path": "assets/jobz-carreira-logo-branco.svg", "usage": "Fundo azul ou escuro" },
+      { "name": "Monocromático preto", "path": "assets/jobz-carreira-logo-mono-preto.svg", "usage": "Aplicações monocromáticas" },
+      { "name": "Favicon", "path": "assets/jobz-carreira-favicon.svg", "usage": "Perfis, favicons e formatos reduzidos" }
+    ],
+    "clearSpace": "Mínimo equivalente à altura da letra J.",
+    "minimumSize": { "digital": "120px", "absolute": "72px", "reduced": "Usar favicon ou monograma J abaixo de 72px." }
+  },
+  "graphics": {
+    "name": "Sinal em Escala",
+    "concept": "O detalhe azul do J se amplia como recorte de canto para indicar direção e próximo passo.",
+    "primaryElement": { "shape": "Quadrante circular azul ancorado no canto inferior direito", "color": "{colors.blueJobz}", "bleed": "20%", "shadow": "{effects.blueGlow}" },
+    "supportingElements": ["marcas de corte finas", "grade discreta", "linhas e pontos de jornada", "cards de vaga", "tags de status"],
+    "usage": "Canto inferior direito em peças de alto impacto; usar como destaque, sem competir com a informação principal."
+  },
+  "components": {
+    "actionPrimary": { "backgroundColor": "{colors.blueJobz}", "textColor": "#FFFFFF", "typography": "{typography.label}", "radius": "{radii.pill}", "height": "48px", "padding": "14px 24px", "usage": "Candidatar-se, ver vagas e ações principais" },
+    "actionSecondary": { "backgroundColor": "transparent", "textColor": "{colors.blackInstitutional}", "border": "1px solid {colors.line}", "typography": "{typography.label}", "radius": "{radii.pill}", "height": "48px", "padding": "13px 23px", "usage": "Ações complementares" },
+    "jobCard": { "backgroundColor": "{colors.backgroundPrimary}", "border": "1px solid {colors.line}", "radius": "{radii.document}", "padding": "22px", "usage": "Posts, site e materiais de divulgação de oportunidades" },
+    "statusTag": { "backgroundColor": "{colors.surface}", "border": "1px solid {colors.line}", "radius": "{radii.pill}", "padding": "6px 8px", "typography": "{typography.label}", "usage": "Formato, localidade e status de vaga" },
+    "journeyStep": { "markerColor": "{colors.blueJobz}", "gap": "10px", "typography": "{typography.label}", "usage": "Publicação, candidatura, triagem e entrevista" },
+    "sideNavigation": { "width": "{layout.sidebar.width}", "activeTextColor": "{colors.blackInstitutional}", "inactiveTextColor": "{colors.textSecondary}", "activeIndicator": "{colors.blueJobz}", "usage": "Brandbooks e documentos extensos" }
+  },
+  "rules": {
+    "do": ["Usar o azul Jobz para indicar ação, seleção e progresso.", "Priorizar fundos claros para leitura de informações longas.", "Manter títulos leves com ênfases pontuais em peso forte.", "Usar o sinal em escala em cantos ou como detalhe de direcionamento."],
+    "dont": ["Não inclinar, distorcer ou redesenhar o logotipo.", "Não trocar o azul principal por outra cor de destaque.", "Não usar o logotipo sobre fundos ruidosos sem contraste suficiente.", "Não alterar espaçamento, proporções ou área de proteção da assinatura."]
+  }
+}
