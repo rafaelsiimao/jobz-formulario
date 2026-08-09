@@ -1,393 +1,435 @@
 'use client';
 
-import React, { useState } from 'react';
-import { submitForm, lookupCnpjInAgendor } from '@/lib/client-api';
+import React, { useState, useRef } from 'react';
+import { checkAblerCompany, lookupCnpjInAgendor, submitForm } from '@/lib/client-api';
+import { uploadVagaFile } from '@/lib/supabase-client';
 import {
   createInitialFormState,
-  ExperienceLevel,
   JobzFormData,
   SERVICE_DESCRIPTIONS,
   ServiceType,
+  CadastroFields,
+  EmpregoFields,
+  ContractType,
+  WorkModel,
+  GenderPreference
 } from '@/types/jobz-form';
 
 export default function JobzIntakeForm() {
   const [formData, setFormData] = useState<JobzFormData>(createInitialFormState());
-  const [isFetchingCnpj, setIsFetchingCnpj] = useState(false);
-  const [cnpjError, setCnpjError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { currentStep = 1 } = formData;
+  const currentStep = formData.currentStep || 0;
+  const totalSteps = formData.serviceType === 'EMPREGO_CLT_PJ' ? 7 : 3; // Estimativa
 
-  const nextStep = () => setFormData(prev => ({ ...prev, currentStep: (prev.currentStep || 1) + 1 }));
-  const prevStep = () => setFormData(prev => ({ ...prev, currentStep: Math.max(1, (prev.currentStep || 1) - 1) }));
-
-  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 14) value = value.slice(0, 14);
-    
-    // Format CNPJ
-    value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-    value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-    value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-    value = value.replace(/(\d{4})(\d)/, '$1-$2');
-
-    setFormData(prev => ({
-      ...prev,
-      clientIdentity: { ...prev.clientIdentity, cnpjCpf: value }
-    }));
+  const nextStep = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFormData(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+  };
+  
+  const prevStep = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFormData(prev => ({ ...prev, currentStep: Math.max(0, prev.currentStep - 1) }));
   };
 
-  const simulateCrmLookup = async () => {
-    const rawCnpj = formData.clientIdentity.cnpjCpf.replace(/\D/g, '');
-    if (rawCnpj.length === 14) {
-      setIsFetchingCnpj(true);
-      setCnpjError(null);
-      try {
-        const result = await lookupCnpjInAgendor(rawCnpj);
-        if (result.found && result.name) {
-          setFormData(prev => ({
-            ...prev,
-            clientIdentity: {
-              ...prev.clientIdentity,
-              razaoSocial: result.name!
-            }
-          }));
-        } else {
-          setFormData(prev => ({
-            ...prev,
-            clientIdentity: {
-              ...prev.clientIdentity,
-              razaoSocial: ''
-            }
-          }));
-          setCnpjError('Empresa não cadastrada no CRM.');
+  const handleCnpjCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 14) value = value.slice(0, 14);
+    if (value.length <= 11) {
+      value = value.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+      value = value.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    setFormData(prev => ({ ...prev, cnpjOuCpfBusca: value }));
+  };
+
+  const verifyCompany = async () => {
+    const rawDoc = formData.cnpjOuCpfBusca.replace(/\D/g, '');
+    if (rawDoc.length !== 11 && rawDoc.length !== 14) {
+      setErrorMsg('Digite um CPF ou CNPJ válido.');
+      return;
+    }
+
+    setIsChecking(true);
+    setErrorMsg(null);
+
+    try {
+      let agendorResult = null;
+      if (rawDoc.length === 14) {
+        agendorResult = await lookupCnpjInAgendor(rawDoc);
+        if (!agendorResult.found) {
+          setErrorMsg('Empresa não cadastrada no Agendor (CRM). Não é possível prosseguir.');
+          setIsChecking(false);
+          return;
         }
-      } catch (err) {
-        setCnpjError('Erro ao consultar CRM.');
-      } finally {
-        setIsFetchingCnpj(false);
       }
+
+      const ablerResult = await checkAblerCompany(rawDoc);
+      
+      setFormData(prev => ({
+        ...prev,
+        agendorData: agendorResult,
+        ablerCustomerId: ablerResult.customerId || null,
+        isNewCompany: !ablerResult.exists,
+        cadastroFields: !ablerResult.exists ? {
+          origem: '', contatoComercial: '', tipoContratacao: rawDoc.length === 14 ? 'CNPJ' : 'CPF',
+          cnpjCpf: prev.cnpjOuCpfBusca, razaoSocial: agendorResult?.name || '', nomeFantasia: '',
+          celularPrincipal: '', enderecoSede: { ruaNumeroComplemento: '', bairro: '', cidade: '', estado: '', cep: '' },
+          representanteLegal: { nome: '', cargo: '', email: '', celular: '' },
+          contatoVagas: 'Representante', contatoFinanceiro: 'Representante', aceiteGdpr: false, aceiteInformativos: false,
+        } : undefined
+      }));
+
+      setFormData(prev => ({ ...prev, currentStep: ablerResult.exists ? 2 : 1 }));
+    } catch (err) {
+      setErrorMsg('Erro ao consultar as integrações.');
+    } finally {
+      setIsChecking(false);
     }
   };
 
-  const renderStep1 = () => (
+  // STEP 0: Identificação
+  const renderStep0 = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Identificação</h2>
-        <p className="text-[var(--color-text-secondary)]">Informe o CNPJ da empresa para iniciarmos.</p>
-      </div>
-      
+      <div><h2 className="text-2xl font-bold mb-2">Identificação</h2><p className="text-[var(--color-text-secondary)]">Informe o CNPJ ou CPF para iniciarmos.</p></div>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-semibold mb-1">CNPJ</label>
+          <label className="block text-sm font-semibold mb-1">CNPJ ou CPF</label>
           <div className="flex gap-2">
-            <input
-              type="text"
-              value={formData.clientIdentity.cnpjCpf}
-              onChange={handleCnpjChange}
-              onBlur={simulateCrmLookup}
-              placeholder="00.000.000/0000-00"
-              className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
-            />
-            <button 
-              type="button" 
-              onClick={simulateCrmLookup}
-              className="bg-[var(--color-blue-jobz)] text-white px-4 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors"
-            >
-              {isFetchingCnpj ? 'Buscando...' : 'Buscar'}
+            <input type="text" value={formData.cnpjOuCpfBusca} onChange={handleCnpjCpfChange} onKeyDown={(e) => e.key === 'Enter' && verifyCompany()} placeholder="00.000.000/0000-00" className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none focus:border-[var(--color-blue-jobz)]" />
+            <button onClick={verifyCompany} disabled={isChecking || !formData.cnpjOuCpfBusca} className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold disabled:opacity-50">
+              {isChecking ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
+          {errorMsg && <p className="text-red-500 text-sm mt-2">{errorMsg}</p>}
         </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-1">Razão Social</label>
-          <input
-            type="text"
-            value={formData.clientIdentity.razaoSocial}
-            readOnly
-            placeholder="Preenchimento automático"
-            className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 text-base bg-[var(--color-surface)] opacity-70 focus-visible:outline-none"
-          />
-          {cnpjError && <p className="text-red-500 text-sm mt-2 font-medium">{cnpjError}</p>}
-        </div>
-      </div>
-      
-      <div className="flex justify-end pt-4">
-        <button
-          type="button"
-          onClick={nextStep}
-          disabled={!formData.clientIdentity.cnpjCpf || !formData.clientIdentity.razaoSocial}
-          className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors disabled:opacity-50"
-        >
-          Próximo
-        </button>
       </div>
     </div>
   );
 
-  const renderStep2 = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Serviço</h2>
-        <p className="text-[var(--color-text-secondary)]">Qual serviço você precisa?</p>
+  // STEP 1: Cadastro
+  const renderStep1 = () => {
+    if (!formData.cadastroFields) return null;
+    const cad = formData.cadastroFields;
+    const setCad = (updates: Partial<CadastroFields>) => setFormData(prev => ({ ...prev, cadastroFields: { ...prev.cadastroFields!, ...updates } }));
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2 text-green-700">💚 Conecte sua empresa à Jobz</h2></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-sm font-semibold mb-1">Razão Social</label><input type="text" value={cad.razaoSocial} onChange={(e) => setCad({ razaoSocial: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Nome Fantasia</label><input type="text" value={cad.nomeFantasia} onChange={(e) => setCad({ nomeFantasia: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Contato Comercial Jobz</label>
+          <select value={cad.contatoComercial} onChange={(e) => setCad({ contatoComercial: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+            <option value="">Selecione...</option><option value="Kleber Alves">Kleber Alves</option><option value="Luciana Roberty">Luciana Roberty</option><option value="Téia Aguiar">Téia Aguiar</option><option value="Elivelton Cardoso">Elivelton Cardoso</option>
+          </select>
+        </div>
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={() => setFormData(prev => ({...prev, currentStep: 0}))} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!cad.razaoSocial || !cad.contatoComercial} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
       </div>
-      
+    );
+  };
+
+  // STEP 2: Serviço
+  const renderStep2 = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+      <div><h2 className="text-2xl font-bold mb-2">Serviço</h2><p className="text-[var(--color-text-secondary)]">Qual serviço você precisa?</p></div>
       <div className="space-y-4">
         {(Object.entries(SERVICE_DESCRIPTIONS) as [ServiceType, {title: string, description: string}][]).map(([key, service]) => (
-          <div 
-            key={key}
-            onClick={() => setFormData(prev => ({ ...prev, serviceType: key }))}
-            className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
-              formData.serviceType === key 
-                ? 'border-[var(--color-blue-jobz)] bg-blue-50' 
-                : 'border-[var(--color-line)] bg-white hover:border-gray-300'
-            }`}
-          >
-            <h3 className="font-bold text-lg">{service.title}</h3>
-            <p className="text-[var(--color-text-secondary)] text-sm mt-1">{service.description}</p>
+          <div key={String(key)} onClick={() => setFormData(prev => ({ ...prev, serviceType: key }))} className={`cursor-pointer p-4 rounded-lg border-2 ${formData.serviceType === key ? 'border-[var(--color-blue-jobz)] bg-blue-50' : 'border-[var(--color-line)]'}`}>
+            <h3 className="font-bold text-lg">{service.title}</h3><p className="text-[var(--color-text-secondary)] text-sm">{service.description}</p>
           </div>
         ))}
       </div>
-
-      <div className="flex justify-between pt-4">
+      <div className="flex justify-between pt-6">
+        <button onClick={() => setFormData(prev => ({ ...prev, currentStep: formData.isNewCompany ? 1 : 0 }))} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
         <button
-          type="button"
-          onClick={prevStep}
-          className="bg-white border border-[var(--color-line)] text-gray-700 px-6 rounded-md font-semibold min-h-[44px] hover:bg-gray-50 transition-colors"
+          onClick={() => {
+            if (formData.serviceType === 'EMPREGO_CLT_PJ') {
+              setFormData(prev => ({
+                ...prev, currentStep: 3,
+                empregoFields: prev.empregoFields || {
+                  origemVaga: '', aceitePagamento: false, aceiteProposta: false, aceitePrazo: false,
+                  vagaSigilosa: false, tituloCargo: '', modeloContrato: 'CLT', nivel: '', quantidadeVagas: 1,
+                  escolaridade: [], genero: 'Indiferente', restricaoIdade: false, temDescricaoPronta: false,
+                  modeloTrabalho: 'Presencial', mesmoLocalSede: true, jornadaDias: [], horarioInicio: '',
+                  tempoIntervalo: '', horarioFim: '', salarioBruto: '', beneficios: [], descricaoBeneficios: '', aceiteAviso24h: false
+                }
+              }));
+            } else {
+              alert('Fases 3 e 4 (Estágio e Formalização) serão implementadas em breve.');
+            }
+          }}
+          disabled={!formData.serviceType}
+          className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50"
         >
-          Voltar
-        </button>
-        <button
-          type="button"
-          onClick={nextStep}
-          className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors"
-        >
-          Próximo
+          Iniciar Preenchimento
         </button>
       </div>
     </div>
   );
 
-  const renderStep3 = () => {
+  // ---------------------------------------------------------------------------
+  // FASE 2: EMPREGO CLT/PJ - STEPS 3 a 7
+  // ---------------------------------------------------------------------------
+  
+  const getEmp = (): EmpregoFields => formData.empregoFields!;
+  const setEmp = (updates: Partial<EmpregoFields>) => {
+    setFormData(prev => ({ ...prev, empregoFields: { ...prev.empregoFields!, ...updates } }));
+  };
+
+  const renderStep3Emprego = () => {
+    const emp = getEmp();
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Briefing da Vaga</h2>
-          <p className="text-[var(--color-text-secondary)]">Detalhes da oportunidade.</p>
-        </div>
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Origem e Aceites (Emprego)</h2></div>
         
-        {formData.serviceType === 'EMPREGO_CLT_PJ' && (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold mb-1">Tipo de Contrato</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
-                  <input 
-                    type="radio" 
-                    name="contrato" 
-                    value="CLT"
-                    checked={formData.jobDetails.modeloContrato === 'CLT'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, modeloContrato: 'CLT' } }))}
-                    className="w-4 h-4 text-[var(--color-blue-jobz)]"
-                  />
-                  <span>CLT</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
-                  <input 
-                    type="radio" 
-                    name="contrato" 
-                    value="PJ"
-                    checked={formData.jobDetails.modeloContrato === 'PJ'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, modeloContrato: 'PJ' } }))}
-                    className="w-4 h-4 text-[var(--color-blue-jobz)]"
-                  />
-                  <span>PJ</span>
-                </label>
-              </div>
-            </div>
+        <div>
+          <label className="block text-sm font-semibold mb-1">Como essa vaga chegou até nós?</label>
+          <select value={emp.origemVaga} onChange={e => setEmp({ origemVaga: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+            <option value="">Selecione...</option><option value="E-mail">E-mail</option><option value="WhatsApp">WhatsApp</option>
+            <option value="Linkedin">Linkedin</option><option value="Indicação">Indicação</option><option value="Outro">Outro</option>
+          </select>
+          {emp.origemVaga === 'Outro' && (
+            <input type="text" placeholder="Qual?" value={emp.origemVagaOutro || ''} onChange={e => setEmp({ origemVagaOutro: e.target.value })} className="w-full mt-2 min-h-[44px] border rounded-md px-3 py-2 outline-none" />
+          )}
+        </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold mb-1">Nível</label>
-                <select
-                  value={formData.jobDetails.nivel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, nivel: e.target.value as ExperienceLevel } }))}
-                  className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
-                >
-                  <option value="Júnior">Júnior</option>
-                  <option value="Pleno">Pleno</option>
-                  <option value="Sênior">Sênior</option>
-                  <option value="Especialista">Especialista</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-1">Qtd. Vagas</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.jobDetails.quantidadeVagas}
-                  onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, quantidadeVagas: parseInt(e.target.value) || 1 } }))}
-                  className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
-                />
-              </div>
-            </div>
+        <div className="space-y-3 bg-[var(--color-surface)] p-4 rounded-md border">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={emp.aceitePagamento} onChange={e => setEmp({ aceitePagamento: e.target.checked })} className="mt-1" />
+            <span className="text-sm">Confirmo que o cliente está ciente da condição comercial (Sinal de 50% de entrada + 50% após o fechamento).</span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={emp.aceiteProposta} onChange={e => setEmp({ aceiteProposta: e.target.checked })} className="mt-1" />
+            <span className="text-sm">Confirmo que a proposta comercial assinada foi enviada ao financeiro.</span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={emp.aceitePrazo} onChange={e => setEmp({ aceitePrazo: e.target.checked })} className="mt-1" />
+            <span className="text-sm">Estou ciente do prazo padrão da entrega (15 dias úteis a partir do start do R&S).</span>
+          </label>
+        </div>
 
-            <div>
-              <label className="block text-sm font-semibold mb-1">Faixa Salarial</label>
-              <input
-                type="text"
-                placeholder="Ex: R$ 3.000 a R$ 4.000"
-                value={formData.jobDetails.faixaSalarial}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, faixaSalarial: e.target.value } }))}
-                className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow"
-              />
-            </div>
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!emp.origemVaga || !emp.aceitePagamento || !emp.aceiteProposta || !emp.aceitePrazo} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
 
-            <div>
-              <label className="block text-sm font-semibold mb-1">Descrição / Responsabilidades</label>
-              <textarea
-                rows={4}
-                value={formData.jobDetails.responsabilidades}
-                onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, responsabilidades: e.target.value } }))}
-                className="w-full min-h-[44px] border border-[var(--color-line)] rounded-md px-3 py-2 bg-white focus-visible:outline-none focus-visible:ring-0 focus-visible:shadow-[var(--effect-focus-ring)] transition-shadow resize-y"
-              />
-            </div>
+  const renderStep4Emprego = () => {
+    const emp = getEmp();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Perfil da Vaga</h2></div>
+
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={emp.vagaSigilosa} onChange={e => setEmp({ vagaSigilosa: e.target.checked })} /> A vaga é sigilosa?</label>
+        </div>
+        {emp.vagaSigilosa && (
+          <div className="p-4 bg-gray-50 border rounded-md space-y-3">
+            <input type="text" placeholder="Nome do profissional que será desligado" value={emp.nomeDesligado || ''} onChange={e => setEmp({ nomeDesligado: e.target.value })} className="w-full border p-2 rounded" />
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={emp.treinamentoPla} onChange={e => setEmp({ treinamentoPla: e.target.checked })} /> Realizaremos Treinamento de PLA ou Consultoria nesta empresa?</label>
           </div>
         )}
-        
-        {formData.serviceType !== 'EMPREGO_CLT_PJ' && (
-           <div className="p-4 bg-yellow-50 text-yellow-800 rounded-md">
-             Campos de estágio ou formalização omitidos para brevidade neste demo.
-           </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1">Título do Cargo</label>
+            <input type="text" value={emp.tituloCargo} onChange={e => setEmp({ tituloCargo: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Modelo de Contrato</label>
+            <select value={emp.modeloContrato} onChange={e => setEmp({ modeloContrato: e.target.value as ContractType })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+              <option value="CLT">CLT</option><option value="PJ">PJ</option><option value="Freelancer">Freelancer</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1">Nível Hierárquico</label>
+            <select value={emp.nivel} onChange={e => setEmp({ nivel: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+              <option value="">Selecione...</option>
+              <option value="Operacional">Operacional</option><option value="Assistente">Assistente</option><option value="Analista">Analista</option>
+              <option value="Especialista">Especialista</option><option value="Liderança">Liderança / Gestão</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Qtd de Vagas</label>
+            <input type="number" min={1} value={emp.quantidadeVagas} onChange={e => setEmp({ quantidadeVagas: parseInt(e.target.value)||1 })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" />
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!emp.tituloCargo || !emp.nivel} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep5Emprego = () => {
+    const emp = getEmp();
+    
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      setIsUploading(true);
+      setUploadError(null);
+      
+      try {
+        const url = await uploadVagaFile(file, formData.cadastroFields?.razaoSocial || formData.agendorData?.name || 'empresa_desconhecida');
+        setEmp({ anexoDescricaoUrl: url });
+      } catch (err) {
+        setUploadError('Erro ao fazer upload. Tente novamente.');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Descrição e Requisitos</h2></div>
+
+        <div className="flex gap-6">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="descType" checked={emp.temDescricaoPronta} onChange={() => setEmp({ temDescricaoPronta: true })} /> 
+            Tenho a descrição pronta (PDF/Doc)
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="descType" checked={!emp.temDescricaoPronta} onChange={() => setEmp({ temDescricaoPronta: false })} /> 
+            Preencher manualmente
+          </label>
+        </div>
+
+        {emp.temDescricaoPronta ? (
+          <div className="border-2 border-dashed p-8 text-center rounded-md">
+            {emp.anexoDescricaoUrl ? (
+              <div className="text-green-600 font-semibold">✅ Arquivo anexado com sucesso!</div>
+            ) : (
+              <>
+                <p className="mb-4 text-gray-600">Selecione o arquivo com o perfil da vaga</p>
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.doc,.docx" className="hidden" />
+                <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="bg-gray-200 px-4 py-2 rounded text-gray-800 font-semibold hover:bg-gray-300">
+                  {isUploading ? 'Enviando...' : 'Procurar arquivo'}
+                </button>
+                {uploadError && <p className="text-red-500 mt-2">{uploadError}</p>}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div><label className="block text-sm font-semibold mb-1">Qual será a função do contratado?</label><textarea rows={3} value={emp.descricaoCargo || ''} onChange={e => setEmp({ descricaoCargo: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Principais responsabilidades</label><textarea rows={3} value={emp.responsabilidades || ''} onChange={e => setEmp({ responsabilidades: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Hard Skills (Requisitos técnicos)</label><textarea rows={2} value={emp.hardSkills || ''} onChange={e => setEmp({ hardSkills: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Soft Skills (Comportamentais)</label><textarea rows={2} value={emp.softSkills || ''} onChange={e => setEmp({ softSkills: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+          </div>
         )}
 
-        <div className="flex justify-between pt-4">
-          <button
-            type="button"
-            onClick={prevStep}
-            className="bg-white border border-[var(--color-line)] text-gray-700 px-6 rounded-md font-semibold min-h-[44px] hover:bg-gray-50 transition-colors"
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={emp.temDescricaoPronta ? !emp.anexoDescricaoUrl : (!emp.descricaoCargo || !emp.responsabilidades)} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep6Emprego = () => {
+    const emp = getEmp();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Trabalho e Remuneração</h2></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1">Modelo de Trabalho</label>
+            <select value={emp.modeloTrabalho} onChange={e => setEmp({ modeloTrabalho: e.target.value as WorkModel })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+              <option value="Presencial">Presencial</option><option value="Híbrido">Híbrido</option><option value="Remoto">Remoto (Home Office)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Salário Bruto Mensal</label>
+            <input type="text" placeholder="Ex: R$ 3.500,00" value={emp.salarioBruto} onChange={e => setEmp({ salarioBruto: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold mb-1">Benefícios</label>
+          <textarea rows={3} placeholder="Descreva Vale Transporte, Plano de Saúde, VA/VR..." value={emp.descricaoBeneficios} onChange={e => setEmp({ descricaoBeneficios: e.target.value })} className="w-full border rounded-md p-2 outline-none" />
+        </div>
+
+        <div className="p-4 bg-yellow-50 text-yellow-900 rounded-md border border-yellow-200">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={emp.aceiteAviso24h} onChange={e => setEmp({ aceiteAviso24h: e.target.checked })} className="mt-1" />
+            <span className="text-sm font-medium">Estou ciente que após o alinhamento da vaga as divulgações sobem no sistema em 24h a 48h.</span>
+          </label>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!emp.salarioBruto || !emp.aceiteAviso24h} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Revisar Vaga</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep7Review = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2 text-green-700">Tudo pronto!</h2><p className="text-[var(--color-text-secondary)]">Revise os dados abaixo antes de abrir a vaga na Abler.</p></div>
+        
+        <div className="bg-[var(--color-surface)] border p-4 rounded-md space-y-2 text-sm">
+          <p><strong>Empresa:</strong> {formData.cadastroFields?.razaoSocial || formData.agendorData?.name}</p>
+          <p><strong>CNPJ:</strong> {formData.cnpjOuCpfBusca}</p>
+          <p><strong>Vaga:</strong> {formData.empregoFields?.tituloCargo} ({formData.empregoFields?.modeloContrato})</p>
+          <p><strong>Qtd:</strong> {formData.empregoFields?.quantidadeVagas} vaga(s)</p>
+          <p><strong>Salário:</strong> {formData.empregoFields?.salarioBruto}</p>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar e Editar</button>
+          <button 
+            onClick={() => alert('Fase 5 - Submissão na Abler será implementada em breve!')}
+            className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-600"
           >
-            Voltar
-          </button>
-          <button
-            type="button"
-            onClick={nextStep}
-            className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors"
-          >
-            Próximo
+            Confirmar e Abrir Vaga
           </button>
         </div>
       </div>
     );
   };
 
-  const renderStep4 = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Envio & Aceite</h2>
-        <p className="text-[var(--color-text-secondary)]">Revise e confirme sua solicitação.</p>
-      </div>
-      
-      <div className="bg-[var(--color-surface)] p-4 rounded-md border border-[var(--color-line)] space-y-2 text-sm">
-        <p><strong>Empresa:</strong> {formData.clientIdentity.razaoSocial} ({formData.clientIdentity.cnpjCpf})</p>
-        <p><strong>Serviço:</strong> {SERVICE_DESCRIPTIONS[formData.serviceType].title}</p>
-        {formData.serviceType === 'EMPREGO_CLT_PJ' && (
-          <p><strong>Vaga:</strong> {formData.jobDetails.nivel} - {formData.jobDetails.modeloContrato} ({formData.jobDetails.quantidadeVagas} vaga{formData.jobDetails.quantidadeVagas > 1 ? 's' : ''})</p>
-        )}
-      </div>
-
-      <div className="space-y-3">
-        <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
-          <input 
-            type="checkbox" 
-            checked={formData.jobDetails.aceiteTermosLgpd}
-            onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, aceiteTermosLgpd: e.target.checked } }))}
-            className="mt-1 w-4 h-4 rounded text-[var(--color-blue-jobz)] focus:ring-[var(--color-blue-jobz)]"
-          />
-          <span className="text-sm">Concordo com os Termos de Uso e Política de Privacidade (LGPD).</span>
-        </label>
-        
-        <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
-          <input 
-            type="checkbox" 
-            checked={formData.jobDetails.aceitePropostaComercial}
-            onChange={(e) => setFormData(prev => ({ ...prev, jobDetails: { ...prev.jobDetails, aceitePropostaComercial: e.target.checked } }))}
-            className="mt-1 w-4 h-4 rounded text-[var(--color-blue-jobz)] focus:ring-[var(--color-blue-jobz)]"
-          />
-          <span className="text-sm">Aceito as condições comerciais (50% na abertura, 3 dias úteis para início).</span>
-        </label>
-      </div>
-
-      <div className="flex justify-between pt-4">
-        <button
-          type="button"
-          onClick={prevStep}
-          disabled={isSubmitting}
-          className="bg-white border border-[var(--color-line)] text-gray-700 px-6 rounded-md font-semibold min-h-[44px] hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          Voltar
-        </button>
-        <button
-          type="button"
-          onClick={async () => {
-            setIsSubmitting(true);
-            try {
-              await submitForm(formData);
-              setSubmitted(true);
-            } catch (error) {
-              console.error('Error submitting form', error);
-              alert('Ocorreu um erro ao enviar o formulário. Tente novamente.');
-            } finally {
-              setIsSubmitting(false);
-            }
-          }}
-          disabled={!formData.jobDetails.aceiteTermosLgpd || !formData.jobDetails.aceitePropostaComercial || isSubmitting}
-          className="bg-[var(--color-blue-jobz)] text-white px-6 rounded-md font-semibold min-h-[44px] hover:bg-blue-600 transition-colors disabled:opacity-50"
-        >
-          {isSubmitting ? 'Enviando...' : 'Finalizar e Enviar'}
-        </button>
-      </div>
-    </div>
-  );
-
-  if (submitted) {
-    return (
-      <div className="text-center py-12 animate-in zoom-in duration-500">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Solicitação Enviada!</h2>
-        <p className="text-[var(--color-text-secondary)]">Nossa equipe entrará em contato em breve.</p>
-        <button
-          onClick={() => {
-            setFormData(createInitialFormState());
-            setSubmitted(false);
-          }}
-          className="mt-6 text-[var(--color-blue-jobz)] font-semibold hover:underline"
-        >
-          Preencher nova vaga
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-[var(--color-card)] rounded-xl shadow-sm border border-[var(--color-line)] p-6 md:p-8 relative overflow-hidden">
-      {/* Progress Bar */}
       <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-line)]">
-        <div 
-          className="h-full bg-[var(--color-blue-jobz)] transition-all duration-500 ease-out"
-          style={{ width: `${(currentStep / 4) * 100}%` }}
-        />
+        <div className="h-full bg-[var(--color-blue-jobz)] transition-all duration-500 ease-out" style={{ width: `${(currentStep / totalSteps) * 100}%` }} />
       </div>
       
+      {currentStep === 0 && renderStep0()}
       {currentStep === 1 && renderStep1()}
       {currentStep === 2 && renderStep2()}
-      {currentStep === 3 && renderStep3()}
-      {currentStep === 4 && renderStep4()}
+      
+      {formData.serviceType === 'EMPREGO_CLT_PJ' && (
+        <>
+          {currentStep === 3 && renderStep3Emprego()}
+          {currentStep === 4 && renderStep4Emprego()}
+          {currentStep === 5 && renderStep5Emprego()}
+          {currentStep === 6 && renderStep6Emprego()}
+          {currentStep === 7 && renderStep7Review()}
+        </>
+      )}
     </div>
   );
 }

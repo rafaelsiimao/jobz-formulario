@@ -24,6 +24,40 @@ export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolea
   }
 }
 
+export async function checkAblerCompany(cnpj: string): Promise<{ exists: boolean; customerId?: number }> {
+  try {
+    const res = await fetch('/api/abler-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cnpj }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erro na consulta [${res.status}]`);
+    }
+
+    return await res.json();
+  } catch (error) {
+    console.error('Falha ao consultar Abler:', error);
+    return { exists: false };
+  }
+}
+
+export async function registerAblerCompany(cadastro: any, agendorData: any): Promise<{ success: boolean; customerId?: number }> {
+  const res = await fetch('/api/abler-register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cadastro, agendorData }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData?.error || `Erro ao cadastrar empresa [${res.status}]`);
+  }
+  
+  return await res.json();
+}
+
 export async function submitForm(data: JobzFormData): Promise<void> {
   const res = await fetch('/api/submit-form', {
     method: 'POST',

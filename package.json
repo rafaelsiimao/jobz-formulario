@@ -13,7 +13,7 @@
     "@ai-sdk/google": "^1.1.0",
     "@ai-sdk/openai": "^1.1.0",
     "@resvg/resvg-js": "^2.6.2",
-    "@supabase/supabase-js": "^2.48.0",
+    "@supabase/supabase-js": "^2.112.2",
     "@types/nodemailer": "^8.0.1",
     "ai": "^4.1.0",
     "canvas-confetti": "^1.9.4",
