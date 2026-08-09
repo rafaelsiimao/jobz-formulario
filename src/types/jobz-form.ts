@@ -107,9 +107,20 @@ export interface EmpregoFields {
   horarioFim: string;
   salarioBruto: string;
   beneficios: string[];
-  descricaoBeneficios: string;
-  valorVaVr?: string;
+  emailContatoConfirmado?: string;
+  celularContatoConfirmado?: string;
   
+  valoresBeneficios?: Record<string, { valor: string; frequencia: 'dia' | 'mes' }>;
+  enderecoOutroData?: {
+    cep: string;
+    rua: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+    numero: string;
+    complemento: string;
+  };
+
   aceiteAviso24h: boolean;
 }
 

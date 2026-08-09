@@ -5,7 +5,7 @@
 
 import { JobzFormData } from '@/types/jobz-form';
 
-export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolean; name?: string }> {
+export async function lookupCnpjInAgendor(cnpj: string): Promise<{ found: boolean; name?: string; email?: string; phone?: string; id?: number }> {
   try {
     const res = await fetch('/api/agendor-lookup', {
       method: 'POST',

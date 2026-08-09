@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { checkAblerCompany, lookupCnpjInAgendor } from '@/lib/client-api';
 import { uploadVagaFile } from '@/lib/supabase-client';
+import { lookupCep } from '@/lib/viacep-client';
 import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import {
   createInitialFormState,
@@ -27,14 +28,14 @@ function formatCurrency(value: string): string {
   });
 }
 
-// Os 6 benefícios mais populares para atalho rápido
+// Atalhos dos 6 benefícios mais populares
 const QUICK_BENEFITS = [
-  'Vale Refeição / Alimentação (VR/VA)',
+  'Vale Refeição (VR)',
+  'Vale Alimentação (VA)',
   'Vale Transporte (VT)',
   'Plano de Saúde',
   'Plano Odontológico',
-  'Gympass / Totalpass',
-  'Auxílio Home Office'
+  'Gympass / Totalpass'
 ];
 
 export default function JobzIntakeForm() {
@@ -43,38 +44,42 @@ export default function JobzIntakeForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  
-  // Lista de benefícios da Abler
+  const [isSearchingCep, setIsSearchingCep] = useState(false);
+
+  // Metadados carregados da API Abler (benefícios, contratos, escolaridade)
   const [ablerBenefitsList, setAblerBenefitsList] = useState<string[]>([]);
+  const [ablerContracts, setAblerContracts] = useState<string[]>(['CLT', 'PJ', 'Estágio', 'Freelancer', 'Temporário']);
+  const [ablerEducationLevels, setAblerEducationLevels] = useState<string[]>([
+    'Ensino Médio', 'Ensino Técnico', 'Ensino Superior Cursando', 'Ensino Superior Completo', 'Pós-graduação / Especialização'
+  ]);
   const [loadingBenefits, setLoadingBenefits] = useState(false);
   const [benefitSearchQuery, setBenefitSearchQuery] = useState('');
   const [showBenefitDropdown, setShowBenefitDropdown] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const benefitInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = formData.currentStep || 0;
-  const totalSteps = 5;
+  const totalSteps = 6;
 
-  // Carregar benefícios da API Abler
+  // Carregar metadados da Abler ao inicializar
   useEffect(() => {
-    async function loadBenefits() {
+    async function loadAblerMetadata() {
       setLoadingBenefits(true);
       try {
         const res = await fetch('/api/abler-benefits');
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data.benefits)) {
-            setAblerBenefitsList(data.benefits);
-          }
+          if (Array.isArray(data.benefits)) setAblerBenefitsList(data.benefits);
+          if (Array.isArray(data.contracts)) setAblerContracts(data.contracts);
+          if (Array.isArray(data.educationLevels)) setAblerEducationLevels(data.educationLevels);
         }
       } catch (err) {
-        console.error('Erro ao carregar benefícios:', err);
+        console.error('Erro ao carregar metadados Abler:', err);
       } finally {
         setLoadingBenefits(false);
       }
     }
-    loadBenefits();
+    loadAblerMetadata();
   }, []);
 
   const nextStep = () => {
@@ -126,8 +131,38 @@ export default function JobzIntakeForm() {
         agendorData: agendorResult,
         ablerCustomerId: ablerResult.customerId || null,
         isNewCompany: !ablerResult.exists,
+        serviceType: 'EMPREGO_CLT_PJ',
+        empregoFields: prev.empregoFields || {
+          origemVaga: '',
+          aceitePagamento: true,
+          aceiteProposta: true,
+          aceitePrazo: true,
+          vagaSigilosa: false,
+          tituloCargo: '',
+          modeloContrato: 'CLT' as ContractType,
+          nivel: '',
+          quantidadeVagas: 1,
+          escolaridade: [],
+          genero: 'Indiferente',
+          restricaoIdade: false,
+          temDescricaoPronta: false,
+          modeloTrabalho: 'Presencial',
+          mesmoLocalSede: true,
+          jornadaDias: [],
+          horarioInicio: '08:00',
+          tempoIntervalo: '01:00',
+          horarioFim: '18:00',
+          salarioBruto: '',
+          beneficios: [],
+          descricaoBeneficios: '',
+          emailContatoConfirmado: agendorResult?.email || '',
+          celularContatoConfirmado: agendorResult?.phone || '',
+          valoresBeneficios: {},
+          aceiteAviso24h: true
+        }
       }));
 
+      // Avança para o Step 1 (Validação de Contatos & Acordos Comerciais)
       setFormData(prev => ({ ...prev, currentStep: 1 }));
     } catch (err) {
       setErrorMsg('Erro ao consultar as integrações.');
@@ -136,16 +171,18 @@ export default function JobzIntakeForm() {
     }
   };
 
-  // STEP 0: Identificação da Empresa
+  // ---------------------------------------------------------------------------
+  // STEP 0: Identificação da Empresa (CNPJ / CPF)
+  // ---------------------------------------------------------------------------
   const renderStep0 = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Identificação da Empresa</h2>
-        <p className="text-sm text-gray-500">Informe o CNPJ ou CPF para consultar seu cadastro.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Abertura de Vaga de Emprego</h2>
+        <p className="text-sm text-gray-500">Informe o CNPJ ou CPF para identificar seu cadastro na Jobz.</p>
       </div>
       <div className="space-y-4">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">CNPJ ou CPF</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">CNPJ ou CPF da Empresa</label>
           <div className="flex gap-3">
             <input 
               type="text" 
@@ -169,131 +206,123 @@ export default function JobzIntakeForm() {
     </div>
   );
 
-  // STEP 1: Escolha do Serviço
-  const renderStep1 = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold mb-2">
-          <span>✓ Empresa identificada</span>
-        </div>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Qual vaga deseja abrir hoje?</h2>
-        <p className="text-sm text-gray-500">
-          Cliente: <strong className="text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</strong>
-        </p>
-      </div>
-      <div className="grid grid-cols-1 gap-3">
-        {(Object.entries(SERVICE_DESCRIPTIONS) as [ServiceType, {title: string, description: string}][]).map(([key, service]) => (
-          <div 
-            key={String(key)} 
-            onClick={() => setFormData(prev => ({ ...prev, serviceType: key }))} 
-            className={`group cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 relative overflow-hidden ${
-              formData.serviceType === key 
-                ? 'border-[var(--color-blue-jobz)] bg-blue-50/50 shadow-sm' 
-                : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-base text-gray-900 group-hover:text-[var(--color-blue-jobz)] transition-colors">{service.title}</h3>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{service.description}</p>
-              </div>
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                formData.serviceType === key ? 'border-[var(--color-blue-jobz)] bg-[var(--color-blue-jobz)]' : 'border-gray-300'
-              }`}>
-                {formData.serviceType === key && <div className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between pt-6 border-t border-gray-100">
-        <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 0 }))} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar</button>
-        <button
-          onClick={() => {
-            if (formData.serviceType === 'EMPREGO_CLT_PJ') {
-              setFormData(prev => ({
-                ...prev, currentStep: 2,
-                empregoFields: prev.empregoFields || {
-                  origemVaga: '', aceitePagamento: true, aceiteProposta: true, aceitePrazo: true,
-                  vagaSigilosa: false, tituloCargo: '', modeloContrato: 'CLT', nivel: '', quantidadeVagas: 1,
-                  escolaridade: [], genero: 'Indiferente', restricaoIdade: false, temDescricaoPronta: false,
-                  modeloTrabalho: 'Presencial', mesmoLocalSede: true, jornadaDias: [], horarioInicio: '',
-                  tempoIntervalo: '', horarioFim: '', salarioBruto: '', beneficios: [], descricaoBeneficios: '', aceiteAviso24h: false
-                }
-              }));
-            } else if (formData.serviceType === 'RS_ESTAGIO') {
-              setFormData(prev => ({
-                ...prev, currentStep: 2,
-                estagioFields: prev.estagioFields || {
-                  jaAbriuVaga: false, modeloTrabalho: 'Presencial', mesmoLocalSede: true,
-                  tipoContrato: 'R&S com Formalização', quantidadeVagas: 1, aceiteGdprPrazo: true,
-                  entrevistador: { nome: '', cargo: '', email: '', celular: '' },
-                  supervisorMesmoEntrevistador: true,
-                  tituloCargo: '', hardSkills: '', softSkills: '', atividades: '', comentariosGerais: '',
-                  nivelEstudante: [], genero: 'Indiferente', sugestaoCurso: '',
-                  periodoEstagio: [], jornadaDias: [], horarioEntrada: '', horarioSaida: '',
-                  valorBolsa: '', valorTransporte: '', contemplaBonificacao: false, contemplaOutroBeneficio: false,
-                  aceiteGdprTermos: true
-                }
-              }));
-            } else if (formData.serviceType === 'FORMALIZACAO_ESTAGIO') {
-              setFormData(prev => ({
-                ...prev, currentStep: 2,
-                formalizacaoFields: prev.formalizacaoFields || {
-                  jaTemCadastro: true, aceiteGdpr: true, modeloTrabalho: 'Presencial', mesmoLocalSede: true,
-                  supervisor: { nome: '', cargo: '', email: '', celular: '', cursoFormacao: '' },
-                  estagiario: { nome: '', cpf: '', telefone: '' },
-                  instituicaoEnsino: '', nomeCurso: '', periodoSemestre: '',
-                  tituloFuncao: '', descricaoAtividades: '', nivelEstudante: '', genero: 'Indiferente',
-                  jornadaDias: [], dataInicio: '', dataTermino: '', horarioEntrada: '', tempoIntervalo: '', horarioSaida: '',
-                  valorBolsa: '', valorTransporte: '', contemplaBonificacao: false, contemplaOutroBeneficio: false, aceiteGdprTce: true
-                }
-              }));
-            }
-          }}
-          disabled={!formData.serviceType}
-          className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50"
-        >
-          Iniciar Preenchimento
-        </button>
-      </div>
-    </div>
-  );
-
   // ---------------------------------------------------------------------------
-  // FLUXO 1: EMPREGO CLT / PJ (STEPS 2 a 5)
+  // STEP 1: Confirmação de Contatos & 3 Acordos Comerciais
   // ---------------------------------------------------------------------------
   const getEmp = (): EmpregoFields => formData.empregoFields!;
   const setEmp = (updates: Partial<EmpregoFields>) => {
     setFormData(prev => ({ ...prev, empregoFields: { ...prev.empregoFields!, ...updates } }));
   };
 
-  const addBenefit = (bName: string) => {
-    const current = getEmp().beneficios || [];
-    if (!current.includes(bName)) {
-      setEmp({ beneficios: [...current, bName] });
-    }
-    setBenefitSearchQuery('');
-    setShowBenefitDropdown(false);
+  const renderStep1 = () => {
+    const emp = getEmp();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold mb-2">
+            <span>✓ Empresa identificada no Agendor</span>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Confirmação de Dados & Termos</h2>
+          <p className="text-sm text-gray-500">
+            Empresa: <strong className="text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</strong>
+          </p>
+        </div>
+
+        {/* E-mail e Celular confirmados do Agendor */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/60 p-4 rounded-2xl border border-gray-100">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">E-mail para Acompanhamento</label>
+            <input 
+              type="email" 
+              placeholder="exemplo@empresa.com.br"
+              value={emp.emailContatoConfirmado || ''} 
+              onChange={e => setEmp({ emailContatoConfirmado: e.target.value })}
+              className="w-full min-h-[44px] bg-white border border-gray-200 rounded-xl px-3.5 text-sm font-medium outline-none focus:border-[var(--color-blue-jobz)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Celular / WhatsApp do Responsável</label>
+            <input 
+              type="text" 
+              placeholder="(00) 90000-0000"
+              value={emp.celularContatoConfirmado || ''} 
+              onChange={e => setEmp({ celularContatoConfirmado: e.target.value })}
+              className="w-full min-h-[44px] bg-white border border-gray-200 rounded-xl px-3.5 text-sm font-medium outline-none focus:border-[var(--color-blue-jobz)]"
+            />
+          </div>
+        </div>
+
+        {/* 3 Acordos Comerciais */}
+        <div className="space-y-3 pt-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Acordos Comerciais da Abertura</h3>
+
+          <div 
+            onClick={() => setEmp({ aceitePagamento: !emp.aceitePagamento })}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
+              emp.aceitePagamento ? 'bg-blue-50/50 border-[var(--color-blue-jobz)]' : 'bg-white border-gray-200'
+            }`}
+          >
+            <input type="checkbox" checked={emp.aceitePagamento} onChange={() => {}} className="mt-1 shrink-0 h-4 w-4 rounded border-gray-300 text-[var(--color-blue-jobz)] focus:ring-0" />
+            <span className="text-xs text-gray-700 font-medium leading-relaxed">
+              Conforme proposta comercial enviada, eu concordo com o <strong>pagamento de 50%, à vista</strong>, referente à abertura do processo seletivo.
+            </span>
+          </div>
+
+          <div 
+            onClick={() => setEmp({ aceiteProposta: !emp.aceiteProposta })}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
+              emp.aceiteProposta ? 'bg-blue-50/50 border-[var(--color-blue-jobz)]' : 'bg-white border-gray-200'
+            }`}
+          >
+            <input type="checkbox" checked={emp.aceiteProposta} onChange={() => {}} className="mt-1 shrink-0 h-4 w-4 rounded border-gray-300 text-[var(--color-blue-jobz)] focus:ring-0" />
+            <span className="text-xs text-gray-700 font-medium leading-relaxed">
+              Estou ciente de que o preenchimento deste formulário constitui o <strong>aceite formal da Proposta Comercial</strong>.
+            </span>
+          </div>
+
+          <div 
+            onClick={() => setEmp({ aceitePrazo: !emp.aceitePrazo })}
+            className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3.5 ${
+              emp.aceitePrazo ? 'bg-blue-50/50 border-[var(--color-blue-jobz)]' : 'bg-white border-gray-200'
+            }`}
+          >
+            <input type="checkbox" checked={emp.aceitePrazo} onChange={() => {}} className="mt-1 shrink-0 h-4 w-4 rounded border-gray-300 text-[var(--color-blue-jobz)] focus:ring-0" />
+            <span className="text-xs text-gray-700 font-medium leading-relaxed">
+              Estou ciente que, após o recebimento dos currículos, tenho <strong>até 3 dias úteis</strong> para avaliar e agendar entrevistas com os candidatos.
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t border-gray-100">
+          <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 0 }))} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
+          <button 
+            onClick={nextStep} 
+            disabled={!emp.aceitePagamento || !emp.aceiteProposta || !emp.aceitePrazo || !emp.emailContatoConfirmado} 
+            className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm transition-all disabled:opacity-50"
+          >
+            Avançar para Vaga
+          </button>
+        </div>
+      </div>
+    );
   };
 
-  const removeBenefit = (bName: string) => {
-    const current = getEmp().beneficios || [];
-    setEmp({ beneficios: current.filter(b => b !== bName) });
-  };
-
+  // ---------------------------------------------------------------------------
+  // STEP 2: Perfil da Vaga & Especificações
+  // ---------------------------------------------------------------------------
   const renderStep2Emprego = () => {
     const emp = getEmp();
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Perfil da Vaga</h2>
-          <p className="text-sm text-gray-500">Defina o cargo, modalidade e requisitos da oportunidade.</p>
+          <p className="text-sm text-gray-500">Defina o cargo, regime contratual e critérios da oportunidade.</p>
         </div>
 
+        {/* Vaga Sigilosa */}
         <ToggleSwitch 
-          label="Vaga Sigilosa?"
-          description="Ative caso a contratação seja para substituição sigilosa na empresa."
+          label="A vaga é sigilosa?"
+          description="Ative caso seja para substituição sigilosa na empresa."
           checked={emp.vagaSigilosa}
           onChange={val => setEmp({ vagaSigilosa: val })}
         />
@@ -301,60 +330,59 @@ export default function JobzIntakeForm() {
         {emp.vagaSigilosa && (
           <div className="p-5 bg-gray-50/80 border border-gray-200 rounded-2xl space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Nome do profissional a ser desligado</label>
+              <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Nome da pessoa a ser desligada</label>
               <input 
                 type="text" 
-                placeholder="Ex: João da Silva" 
+                placeholder="Ex: Nome do antigo ocupante" 
                 value={emp.nomeDesligado || ''} 
                 onChange={e => setEmp({ nomeDesligado: e.target.value })} 
                 className="w-full min-h-[44px] bg-white border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none focus:border-[var(--color-blue-jobz)]" 
               />
             </div>
             <ToggleSwitch 
-              label="Treinamento de Liderança PLA / Consultoria?"
-              description="Realizaremos treinamento ou consultoria neste cliente durante o processo?"
+              label="Treinamento de Liderança PLA?"
+              description="A vaga possui treinamento de liderança PLA ou consultoria vinculada?"
               checked={emp.treinamentoPla || false}
               onChange={val => setEmp({ treinamentoPla: val })}
             />
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Título do Cargo</label>
-            <input 
-              type="text" 
-              placeholder="Ex: Analista Financeiro Senior" 
-              value={emp.tituloCargo} 
-              onChange={e => setEmp({ tituloCargo: e.target.value })} 
-              className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-gray-900 font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)] transition-all" 
-            />
-          </div>
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Título do Cargo</label>
+          <input 
+            type="text" 
+            placeholder="Ex: Analista Contábil Senior" 
+            value={emp.tituloCargo} 
+            onChange={e => setEmp({ tituloCargo: e.target.value })} 
+            className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-gray-900 font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)] transition-all" 
+          />
+        </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Modelo de Contrato</label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['CLT', 'PJ'] as ContractType[]).map(type => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setEmp({ modeloContrato: type })}
-                  className={`min-h-[48px] rounded-xl font-bold text-sm transition-all border ${
-                    emp.modeloContrato === type 
-                      ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-sm' 
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
+        {/* Modelo de Contrato Puxado da Abler */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Modelo de Contrato (Abler)</label>
+          <div className="flex flex-wrap gap-2">
+            {ablerContracts.map(type => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setEmp({ modeloContrato: type as ContractType })}
+                className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all border ${
+                  emp.modeloContrato === type 
+                    ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Nível Hierárquico</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Nível da Vaga</label>
             <select 
               value={emp.nivel} 
               onChange={e => setEmp({ nivel: e.target.value })} 
@@ -365,7 +393,7 @@ export default function JobzIntakeForm() {
               <option value="Assistente">Assistente</option>
               <option value="Analista">Analista</option>
               <option value="Especialista">Especialista</option>
-              <option value="Liderança">Liderança / Gestão</option>
+              <option value="Liderança / Gestão">Liderança / Gestão</option>
             </select>
           </div>
           <div>
@@ -380,14 +408,90 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
+        {/* Escolaridade Puxada da Abler */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Escolaridade Mínima</label>
+          <div className="flex flex-wrap gap-2">
+            {ablerEducationLevels.map(edu => {
+              const isSelected = (emp.escolaridade || []).includes(edu);
+              return (
+                <button
+                  key={edu}
+                  type="button"
+                  onClick={() => {
+                    const current = emp.escolaridade || [];
+                    if (isSelected) {
+                      setEmp({ escolaridade: current.filter(e => e !== edu) });
+                    } else {
+                      setEmp({ escolaridade: [...current, edu] });
+                    }
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                    isSelected 
+                      ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)]' 
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {isSelected ? `✓ ${edu}` : edu}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Gênero */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Gênero</label>
+          <div className="flex flex-wrap gap-2">
+            {(['Indiferente', 'Feminino', 'Masculino', 'Outro'] as const).map(g => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setEmp({ genero: g })}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                  emp.genero === g 
+                    ? 'bg-gray-900 text-white border-gray-900' 
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Restrição de Idade */}
+        <ToggleSwitch 
+          label="Há restrição ou preferência legal de idade?"
+          description="Ative caso exista uma faixa etária específica necessária."
+          checked={emp.restricaoIdade}
+          onChange={val => setEmp({ restricaoIdade: val })}
+        />
+
+        {emp.restricaoIdade && (
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Qual a faixa etária desejada?</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Entre 25 e 40 anos" 
+              value={emp.faixaEtaria || ''} 
+              onChange={e => setEmp({ faixaEtaria: e.target.value })} 
+              className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" 
+            />
+          </div>
+        )}
+
         <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 1 }))} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar</button>
-          <button onClick={nextStep} disabled={!emp.tituloCargo || !emp.nivel} className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50">Avançar</button>
+          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
+          <button onClick={nextStep} disabled={!emp.tituloCargo || !emp.nivel} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50">Avançar</button>
         </div>
       </div>
     );
   };
 
+  // ---------------------------------------------------------------------------
+  // STEP 3: Descrição & Requisitos
+  // ---------------------------------------------------------------------------
   const renderStep3Emprego = () => {
     const emp = getEmp();
     
@@ -412,13 +516,13 @@ export default function JobzIntakeForm() {
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Descrição e Requisitos</h2>
-          <p className="text-sm text-gray-500">Como você prefere nos enviar as atribuições do cargo?</p>
+          <p className="text-sm text-gray-500">Você pode anexar um documento pronto para economizar tempo ou preencher manualmente.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div 
             onClick={() => setEmp({ temDescricaoPronta: true })}
-            className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+            className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${
               emp.temDescricaoPronta ? 'border-[var(--color-blue-jobz)] bg-blue-50/60 font-semibold' : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -426,7 +530,7 @@ export default function JobzIntakeForm() {
           </div>
           <div 
             onClick={() => setEmp({ temDescricaoPronta: false })}
-            className={`cursor-pointer p-4 rounded-xl border-2 transition-all ${
+            className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${
               !emp.temDescricaoPronta ? 'border-[var(--color-blue-jobz)] bg-blue-50/60 font-semibold' : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -438,11 +542,11 @@ export default function JobzIntakeForm() {
           <div className="border-2 border-dashed border-gray-200 p-8 text-center rounded-2xl bg-gray-50/50">
             {emp.anexoDescricaoUrl ? (
               <div className="text-green-600 font-bold flex items-center justify-center gap-2">
-                <span>✅ Arquivo anexado com sucesso!</span>
+                <span>✅ Arquivo da vaga anexado com sucesso!</span>
               </div>
             ) : (
               <>
-                <p className="mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Selecione o PDF ou documento com o perfil completo</p>
+                <p className="mb-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Anexe o documento da vaga em PDF ou Word</p>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.doc,.docx" className="hidden" />
                 <button 
                   type="button" 
@@ -459,32 +563,35 @@ export default function JobzIntakeForm() {
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Descrição da Função</label>
-              <textarea rows={3} placeholder="Descreva as atribuições do dia a dia..." value={emp.descricaoCargo || ''} onChange={e => setEmp({ descricaoCargo: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Descrição do Cargo (Função)</label>
+              <textarea rows={3} placeholder="Descreva a função do contratado..." value={emp.descricaoCargo || ''} onChange={e => setEmp({ descricaoCargo: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Principais Responsabilidades</label>
-              <textarea rows={3} placeholder="Ex: Gestão de estoque, emissão de NF..." value={emp.responsabilidades || ''} onChange={e => setEmp({ responsabilidades: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
+              <textarea rows={3} placeholder="Atribuições do dia a dia..." value={emp.responsabilidades || ''} onChange={e => setEmp({ responsabilidades: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Hard Skills (Requisitos Técnicos)</label>
-              <textarea rows={2} placeholder="Ex: Excel avançado, Python, CRM..." value={emp.hardSkills || ''} onChange={e => setEmp({ hardSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Requisitos Técnicos (Hard Skills)</label>
+              <textarea rows={2} placeholder="Ex: Excel avançado, Python, Legislação..." value={emp.hardSkills || ''} onChange={e => setEmp({ hardSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
             </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Soft Skills (Comportamentais)</label>
-              <textarea rows={2} placeholder="Ex: Trabalho em equipe, resiliência..." value={emp.softSkills || ''} onChange={e => setEmp({ softSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Perfil Comportamental (Soft Skills)</label>
+              <textarea rows={2} placeholder="Ex: Liderança, proatividade, boa comunicação..." value={emp.softSkills || ''} onChange={e => setEmp({ softSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" />
             </div>
           </div>
         )}
 
         <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar</button>
-          <button onClick={nextStep} disabled={emp.temDescricaoPronta ? !emp.anexoDescricaoUrl : (!emp.descricaoCargo || !emp.responsabilidades)} className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50">Avançar</button>
+          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
+          <button onClick={nextStep} disabled={emp.temDescricaoPronta ? !emp.anexoDescricaoUrl : (!emp.descricaoCargo || !emp.responsabilidades)} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50">Avançar</button>
         </div>
       </div>
     );
   };
 
+  // ---------------------------------------------------------------------------
+  // STEP 4: Local, Jornada, Salário & Benefícios Inteligentes (com CEP e /dia ou /mês)
+  // ---------------------------------------------------------------------------
   const renderStep4Emprego = () => {
     const emp = getEmp();
 
@@ -492,7 +599,55 @@ export default function JobzIntakeForm() {
       setEmp({ salarioBruto: formatCurrency(e.target.value) });
     };
 
-    // Filtrar sugestões de busca
+    const handleCepSearch = async (cepInput: string) => {
+      if (cepInput.replace(/\D/g, '').length === 8) {
+        setIsSearchingCep(true);
+        const data = await lookupCep(cepInput);
+        setIsSearchingCep(false);
+        if (data) {
+          setEmp({
+            enderecoOutroData: {
+              ...(emp.enderecoOutroData || { numero: '', complemento: '' }),
+              cep: data.cep,
+              rua: data.logradouro,
+              bairro: data.bairro,
+              cidade: data.localidade,
+              estado: data.uf
+            }
+          });
+        }
+      }
+    };
+
+    const updateBenefitValue = (bName: string, valor: string, frequencia: 'dia' | 'mes') => {
+      const currentMap = emp.valoresBeneficios || {};
+      setEmp({
+        valoresBeneficios: {
+          ...currentMap,
+          [bName]: { valor, frequencia }
+        }
+      });
+    };
+
+    const addBenefit = (bName: string) => {
+      const current = emp.beneficios || [];
+      if (!current.includes(bName)) {
+        setEmp({ beneficios: [...current, bName] });
+      }
+      setBenefitSearchQuery('');
+      setShowBenefitDropdown(false);
+    };
+
+    const removeBenefit = (bName: string) => {
+      const current = emp.beneficios || [];
+      const updatedMap = { ...(emp.valoresBeneficios || {}) };
+      delete updatedMap[bName];
+      setEmp({ 
+        beneficios: current.filter(b => b !== bName),
+        valoresBeneficios: updatedMap
+      });
+    };
+
     const filteredSuggestions = benefitSearchQuery.trim()
       ? ablerBenefitsList.filter(b => 
           b.toLowerCase().includes(benefitSearchQuery.toLowerCase()) && 
@@ -503,8 +658,8 @@ export default function JobzIntakeForm() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Trabalho & Benefícios</h2>
-          <p className="text-sm text-gray-500">Defina o modelo de trabalho e a proposta de remuneração.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Local, Jornada & Remuneração</h2>
+          <p className="text-sm text-gray-500">Defina os detalhes de atendimento, horários e benefícios.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -533,12 +688,83 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* Bloco Limpo e Otimizado de Benefícios */}
+        {/* Local de Atuação & ViaCEP Gratuito */}
+        <div className="p-5 bg-gray-50/70 border border-gray-200 rounded-2xl space-y-3">
+          <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Local de atuação é o mesmo da sede da empresa?</label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setEmp({ mesmoLocalSede: true })}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                emp.mesmoLocalSede ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200'
+              }`}
+            >
+              Sim (Sede Agendor)
+            </button>
+            <button
+              type="button"
+              onClick={() => setEmp({ mesmoLocalSede: false })}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                !emp.mesmoLocalSede ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)]' : 'bg-white text-gray-700 border-gray-200'
+              }`}
+            >
+              Não (Outro Endereço)
+            </button>
+          </div>
+
+          {!emp.mesmoLocalSede && (
+            <div className="pt-3 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Buscar por CEP (Gratuito via ViaCEP)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="00000-000" 
+                    value={emp.enderecoOutroData?.cep || ''} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      setEmp({ enderecoOutroData: { ...(emp.enderecoOutroData || { rua: '', bairro: '', cidade: '', estado: '', numero: '', complemento: '' }), cep: val } });
+                      handleCepSearch(val);
+                    }}
+                    className="w-48 min-h-[44px] bg-white border border-gray-200 rounded-xl px-4 text-xs font-bold outline-none"
+                  />
+                  {isSearchingCep && <span className="text-xs text-gray-500 flex items-center">Buscando CEP...</span>}
+                </div>
+              </div>
+
+              {emp.enderecoOutroData?.cidade && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 bg-white p-3 rounded-xl border text-xs">
+                  <div className="col-span-2"><strong>Rua:</strong> {emp.enderecoOutroData.rua}, {emp.enderecoOutroData.bairro}</div>
+                  <div><strong>Cidade/UF:</strong> {emp.enderecoOutroData.cidade}/{emp.enderecoOutroData.estado}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Jornada Completa */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Jornada de Trabalho (Segunda a Sexta)</label>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Entrada</label>
+              <input type="time" value={emp.horarioInicio} onChange={e => setEmp({ horarioInicio: e.target.value })} className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-3 font-medium outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Intervalo</label>
+              <input type="text" placeholder="Ex: 01:00" value={emp.tempoIntervalo} onChange={e => setEmp({ tempoIntervalo: e.target.value })} className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-3 font-medium outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Saída</label>
+              <input type="time" value={emp.horarioFim} onChange={e => setEmp({ horarioFim: e.target.value })} className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-3 font-medium outline-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Benefícios Inteligentes com Frequência (/dia ou /mês) */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">
-              Atalhos de Benefícios Mais Comuns
-            </label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Atalhos de Benefícios Principais</label>
             <div className="flex flex-wrap gap-2">
               {QUICK_BENEFITS.map(bName => {
                 const isSelected = (emp.beneficios || []).includes(bName);
@@ -547,7 +773,7 @@ export default function JobzIntakeForm() {
                     key={bName}
                     type="button"
                     onClick={() => isSelected ? removeBenefit(bName) : addBenefit(bName)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                       isSelected 
                         ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
                         : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
@@ -560,14 +786,11 @@ export default function JobzIntakeForm() {
             </div>
           </div>
 
-          {/* Campo de Busca Autocomplete no Catálogo Abler */}
+          {/* Autocomplete Abler */}
           <div className="relative">
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">
-              Buscar Outro Benefício (Abler) ou Digitar Customizado
-            </label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Buscar no Catálogo Abler ou Adicionar Outro</label>
             <div className="flex gap-2">
               <input 
-                ref={benefitInputRef}
                 type="text" 
                 placeholder="Ex: Auxílio Creche, Seguro de Vida..." 
                 value={benefitSearchQuery} 
@@ -585,25 +808,16 @@ export default function JobzIntakeForm() {
                 className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" 
               />
               {benefitSearchQuery.trim() && (
-                <button
-                  type="button"
-                  onClick={() => addBenefit(benefitSearchQuery.trim())}
-                  className="bg-gray-900 text-white text-xs font-semibold px-4 rounded-xl hover:bg-black shrink-0"
-                >
+                <button type="button" onClick={() => addBenefit(benefitSearchQuery.trim())} className="bg-gray-900 text-white text-xs font-semibold px-4 rounded-xl hover:bg-black shrink-0">
                   Adicionar
                 </button>
               )}
             </div>
 
-            {/* Dropdown com sugestões da Abler */}
             {showBenefitDropdown && filteredSuggestions.length > 0 && (
               <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
                 {filteredSuggestions.map(sugg => (
-                  <div
-                    key={sugg}
-                    onClick={() => addBenefit(sugg)}
-                    className="px-4 py-2 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-[var(--color-blue-jobz)] cursor-pointer transition-colors"
-                  >
+                  <div key={sugg} onClick={() => addBenefit(sugg)} className="px-4 py-2 text-xs font-medium text-gray-700 hover:bg-blue-50 cursor-pointer">
                     + {sugg}
                   </div>
                 ))}
@@ -611,64 +825,90 @@ export default function JobzIntakeForm() {
             )}
           </div>
 
-          {/* Tags dos Benefícios Selecionados */}
+          {/* Benefícios Selecionados com Especificação de Valor e Frequência (/dia ou /mês) */}
           {emp.beneficios && emp.beneficios.length > 0 && (
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                Benefícios Selecionados ({emp.beneficios.length}):
+            <div className="space-y-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600">
+                Informar Valores dos Benefícios ({emp.beneficios.length}):
               </label>
-              <div className="flex flex-wrap gap-1.5 p-3 bg-gray-50 border border-gray-200/60 rounded-xl">
-                {emp.beneficios.map(b => (
-                  <span 
-                    key={b} 
-                    className="inline-flex items-center gap-1.5 bg-blue-50 text-[var(--color-blue-jobz)] border border-blue-200/50 font-semibold text-xs px-3 py-1 rounded-lg"
-                  >
-                    <span>{b}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => removeBenefit(b)}
-                      className="hover:text-red-600 text-blue-400 font-bold text-sm leading-none"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+              <div className="space-y-2 bg-gray-50 p-4 rounded-2xl border border-gray-200/80">
+                {emp.beneficios.map(bName => {
+                  const bValObj = (emp.valoresBeneficios || {})[bName] || { valor: '', frequencia: 'dia' };
+                  const isValuable = /refei[çc][ãa]o|alimenta[çc][ãa]o|transporte|vr|va|vt|aux[íi]lio/i.test(bName);
+
+                  return (
+                    <div key={bName} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-gray-200/60 shadow-2xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-900">{bName}</span>
+                        <button type="button" onClick={() => removeBenefit(bName)} className="text-xs text-red-500 hover:underline">Remover</button>
+                      </div>
+
+                      {isValuable && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <input 
+                            type="text" 
+                            placeholder="R$ 0,00" 
+                            value={bValObj.valor} 
+                            onChange={e => updateBenefitValue(bName, formatCurrency(e.target.value), bValObj.frequencia)}
+                            className="w-28 min-h-[36px] bg-gray-50 border border-gray-200 rounded-lg px-2.5 text-xs font-bold outline-none"
+                          />
+                          <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                            <button
+                              type="button"
+                              onClick={() => updateBenefitValue(bName, bValObj.valor, 'dia')}
+                              className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${bValObj.frequencia === 'dia' ? 'bg-[var(--color-blue-jobz)] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                              / dia
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateBenefitValue(bName, bValObj.valor, 'mes')}
+                              className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${bValObj.frequencia === 'mes' ? 'bg-[var(--color-blue-jobz)] text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                              / mês
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
-        <ToggleSwitch 
-          label="Ciente do prazo de início (24h a 48h)"
-          description="Estou ciente que após o alinhamento da vaga, o processo seletivo inicia em até 48 horas."
-          checked={emp.aceiteAviso24h}
-          onChange={val => setEmp({ aceiteAviso24h: val })}
-        />
-
         <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar</button>
-          <button onClick={nextStep} disabled={!emp.salarioBruto || !emp.aceiteAviso24h} className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50">Revisar Vaga</button>
+          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
+          <button onClick={nextStep} disabled={!emp.salarioBruto} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50">Revisar Vaga</button>
         </div>
       </div>
     );
   };
 
+  // ---------------------------------------------------------------------------
+  // STEP 5: Avisos Finais & Confirmação Executiva
+  // ---------------------------------------------------------------------------
   const renderStep5EmpregoReview = () => {
     const emp = getEmp();
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold mb-2">
-            <span>✨ Tudo pronto para publicação</span>
+            <span>✨ Tudo pronto para envio</span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Revisão da Vaga de Emprego</h2>
-          <p className="text-sm text-gray-500">Confira as informações antes de finalizar.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Revisão Executiva da Vaga</h2>
+          <p className="text-sm text-gray-500">Confira o resumo das especificações da oportunidade.</p>
         </div>
         
         <div className="bg-gray-50/70 border border-gray-200/80 p-5 rounded-2xl space-y-3 text-sm">
           <div className="flex justify-between py-1 border-b border-gray-200/50">
             <span className="text-gray-500 font-medium">Empresa</span>
             <span className="font-bold text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</span>
+          </div>
+          <div className="flex justify-between py-1 border-b border-gray-200/50">
+            <span className="text-gray-500 font-medium">E-mail de Contato</span>
+            <span className="font-bold text-gray-900">{emp.emailContatoConfirmado}</span>
           </div>
           <div className="flex justify-between py-1 border-b border-gray-200/50">
             <span className="text-gray-500 font-medium">Cargo & Contrato</span>
@@ -682,287 +922,22 @@ export default function JobzIntakeForm() {
             <span className="text-gray-500 font-medium">Salário Bruto</span>
             <span className="font-bold text-green-700">{emp.salarioBruto}</span>
           </div>
-          {emp.beneficios && emp.beneficios.length > 0 && (
-            <div className="py-1">
-              <span className="text-gray-500 font-medium block mb-1">Benefícios ({emp.beneficios.length})</span>
-              <div className="flex flex-wrap gap-1">
-                {emp.beneficios.map(b => (
-                  <span key={b} className="bg-blue-50 text-[var(--color-blue-jobz)] font-semibold text-xs px-2.5 py-0.5 rounded-full">{b}</span>
-                ))}
-              </div>
-            </div>
-          )}
+        </div>
+
+        {/* Card de Avisos Finais e Prazos Obrigatórios */}
+        <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl space-y-2.5 text-xs text-blue-950 font-medium leading-relaxed">
+          <p>📌 <strong>Próximas 24h:</strong> O recrutador responsável fará contato por e-mail, ligação ou WhatsApp para seguir com o alinhamento da vaga.</p>
+          <p>🗓️ <strong>Agenda de Entrevistas:</strong> As entrevistas com os candidatos selecionados acontecerão na empresa após <strong>11 dias</strong> da data de hoje. <em>(Caso não seja possível, sinalize ao recrutador no ato do alinhamento)</em>.</p>
+          <p>⌛ <strong>Prazo de Retorno:</strong> Conforme proposta recebida, aguardamos até <strong>3 dias úteis</strong> para a realização das entrevistas após a entrega dos currículos selecionados.</p>
         </div>
 
         <div className="flex justify-between pt-6 border-t border-gray-100">
           <button onClick={prevStep} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar e Editar</button>
           <button 
-            onClick={() => alert('Vaga enviada com sucesso!')}
+            onClick={() => alert('Vaga enviada com sucesso para a Abler e Notificações!')}
             className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all"
           >
             Confirmar e Abrir Vaga
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // ---------------------------------------------------------------------------
-  // FLUXO 2: R&S ESTÁGIO (STEPS 2 a 5)
-  // ---------------------------------------------------------------------------
-  const getEst = (): EstagioFields => formData.estagioFields!;
-  const setEst = (updates: Partial<EstagioFields>) => {
-    setFormData(prev => ({ ...prev, estagioFields: { ...prev.estagioFields!, ...updates } }));
-  };
-
-  const renderStep2Estagio = () => {
-    const est = getEst();
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Modalidade do Estágio</h2></div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Modelo de Trabalho</label>
-              <select value={est.modeloTrabalho} onChange={e => setEst({ modeloTrabalho: e.target.value as WorkModel })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none">
-                <option value="Presencial">Presencial</option><option value="Híbrido">Híbrido</option><option value="Remoto">Remoto</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Qtd de Vagas</label>
-              <input type="number" min={1} value={est.quantidadeVagas} onChange={e => setEst({ quantidadeVagas: parseInt(e.target.value)||1 })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Tipo de Contratação</label>
-            <select value={est.tipoContrato} onChange={e => setEst({ tipoContrato: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none">
-              <option value="R&S com Formalização">R&S com Formalização (Jobz cuida do contrato)</option>
-              <option value="Apenas R&S">Apenas R&S (Cliente cuida do contrato)</option>
-            </select>
-          </div>
-
-          <div className="border-t pt-4">
-            <h3 className="font-bold text-gray-900 mb-3 text-sm">Dados do Entrevistador na Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Nome do Entrevistador</label><input type="text" value={est.entrevistador.nome} onChange={e => setEst({ entrevistador: { ...est.entrevistador, nome: e.target.value }})} className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-              <div><label className="block text-xs font-semibold text-gray-600 mb-1">Celular de Contato</label><input type="text" value={est.entrevistador.celular} onChange={e => setEst({ entrevistador: { ...est.entrevistador, celular: e.target.value }})} className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 1 }))} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!est.entrevistador.nome || !est.entrevistador.celular} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Avançar</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep3Estagio = () => {
-    const est = getEst();
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Perfil do Estagiário</h2></div>
-        
-        <div className="space-y-4">
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Título da Vaga</label><input type="text" placeholder="Ex: Estagiário de Comunicação" value={est.tituloCargo} onChange={e => setEst({ tituloCargo: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Cursos Sugeridos</label><input type="text" placeholder="Ex: Jornalismo, Publicidade, Marketing" value={est.sugestaoCurso} onChange={e => setEst({ sugestaoCurso: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Atividades do Estágio</label><textarea rows={3} value={est.atividades} onChange={e => setEst({ atividades: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Hard Skills (Conhecimentos Técnicos)</label><textarea rows={2} value={est.hardSkills} onChange={e => setEst({ hardSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Soft Skills (Comportamento)</label><textarea rows={2} value={est.softSkills} onChange={e => setEst({ softSkills: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" /></div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!est.tituloCargo || !est.sugestaoCurso || !est.atividades} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Avançar</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep4Estagio = () => {
-    const est = getEst();
-    const handleBolsaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setEst({ valorBolsa: formatCurrency(e.target.value) });
-    };
-
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Jornada e Remuneração</h2></div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Bolsa Auxílio Mensal</label><input type="text" placeholder="R$ 0,00" value={est.valorBolsa} onChange={handleBolsaChange} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-bold outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Auxílio Transporte</label><input type="text" placeholder="Ex: R$ 150,00 ou Passagem integrativa" value={est.valorTransporte} onChange={e => setEst({ valorTransporte: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Horário de Entrada</label><input type="time" value={est.horarioEntrada} onChange={e => setEst({ horarioEntrada: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Horário de Saída</label><input type="time" value={est.horarioSaida} onChange={e => setEst({ horarioSaida: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!est.valorBolsa || !est.horarioEntrada} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Revisar Vaga</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep5EstagioReview = () => {
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Revisão da Vaga de Estágio</h2></div>
-        
-        <div className="bg-gray-50/70 border border-gray-200 p-5 rounded-2xl space-y-3 text-sm">
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Empresa</span>
-            <span className="font-bold text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Vaga & Contrato</span>
-            <span className="font-bold text-gray-900">{formData.estagioFields?.tituloCargo} ({formData.estagioFields?.tipoContrato})</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Cursos Sugeridos</span>
-            <span className="font-bold text-gray-900">{formData.estagioFields?.sugestaoCurso}</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Bolsa Auxílio</span>
-            <span className="font-bold text-green-700">{formData.estagioFields?.valorBolsa}</span>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar e Editar</button>
-          <button onClick={() => alert('Vaga de estágio aberta!')} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-blue-700 transition-all">
-            Confirmar e Abrir Vaga
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // ---------------------------------------------------------------------------
-  // FLUXO 3: FORMALIZAÇÃO DE ESTÁGIO (STEPS 2 a 5)
-  // ---------------------------------------------------------------------------
-  const getForm = (): FormalizacaoFields => formData.formalizacaoFields!;
-  const setForm = (updates: Partial<FormalizacaoFields>) => {
-    setFormData(prev => ({ ...prev, formalizacaoFields: { ...prev.formalizacaoFields!, ...updates } }));
-  };
-
-  const renderStep2Formalizacao = () => {
-    const form = getForm();
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Dados do Supervisor do Estágio</h2></div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Nome do Supervisor</label><input type="text" value={form.supervisor.nome} onChange={e => setForm({ supervisor: { ...form.supervisor, nome: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Cargo</label><input type="text" value={form.supervisor.cargo} onChange={e => setForm({ supervisor: { ...form.supervisor, cargo: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">E-mail</label><input type="email" value={form.supervisor.email} onChange={e => setForm({ supervisor: { ...form.supervisor, email: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Celular</label><input type="text" value={form.supervisor.celular} onChange={e => setForm({ supervisor: { ...form.supervisor, celular: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Curso de Formação</label><input type="text" value={form.supervisor.cursoFormacao} onChange={e => setForm({ supervisor: { ...form.supervisor, cursoFormacao: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 1 }))} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!form.supervisor.nome || !form.supervisor.cursoFormacao} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Avançar</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep3Formalizacao = () => {
-    const form = getForm();
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Dados do Estudante</h2></div>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Nome do Estudante</label><input type="text" value={form.estagiario.nome} onChange={e => setForm({ estagiario: { ...form.estagiario, nome: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">CPF</label><input type="text" value={form.estagiario.cpf} onChange={e => setForm({ estagiario: { ...form.estagiario, cpf: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Telefone do Estudante</label><input type="text" value={form.estagiario.telefone} onChange={e => setForm({ estagiario: { ...form.estagiario, telefone: e.target.value }})} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          </div>
-          
-          <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Instituição de Ensino</label><input type="text" value={form.instituicaoEnsino} onChange={e => setForm({ instituicaoEnsino: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Nome do Curso</label><input type="text" value={form.nomeCurso} onChange={e => setForm({ nomeCurso: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Semestre Atual</label><input type="text" value={form.periodoSemestre} onChange={e => setForm({ periodoSemestre: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!form.estagiario.nome || !form.estagiario.cpf || !form.instituicaoEnsino} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Avançar</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep4Formalizacao = () => {
-    const form = getForm();
-    const handleBolsaFormalizacaoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm({ valorBolsa: formatCurrency(e.target.value) });
-    };
-
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Funções & Bolsa</h2></div>
-        
-        <div className="space-y-4">
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Título da Função (Estágio em...)</label><input type="text" value={form.tituloFuncao} onChange={e => setForm({ tituloFuncao: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-          <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Descrição das Atividades</label><textarea rows={3} value={form.descricaoAtividades} onChange={e => setForm({ descricaoAtividades: e.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm outline-none" /></div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Data Início</label><input type="date" value={form.dataInicio} onChange={e => setForm({ dataInicio: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Data Término</label><input type="date" value={form.dataTermino} onChange={e => setForm({ dataTermino: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-medium outline-none" /></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Bolsa Auxílio</label><input type="text" placeholder="R$ 0,00" value={form.valorBolsa} onChange={handleBolsaFormalizacaoChange} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 font-bold outline-none" /></div>
-            <div><label className="block text-xs font-bold uppercase text-gray-600 mb-1.5">Auxílio Transporte</label><input type="text" placeholder="R$" value={form.valorTransporte} onChange={e => setForm({ valorTransporte: e.target.value })} className="w-full min-h-[48px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-sm font-medium outline-none" /></div>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar</button>
-          <button onClick={nextStep} disabled={!form.tituloFuncao || !form.valorBolsa} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm disabled:opacity-50">Revisar Formalização</button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderStep5FormalizacaoReview = () => {
-    return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-        <div><h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Pronto para emitir o TCE!</h2></div>
-        
-        <div className="bg-gray-50/70 border border-gray-200 p-5 rounded-2xl space-y-3 text-sm">
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Empresa</span>
-            <span className="font-bold text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Estudante</span>
-            <span className="font-bold text-gray-900">{formData.formalizacaoFields?.estagiario.nome}</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Curso</span>
-            <span className="font-bold text-gray-900">{formData.formalizacaoFields?.nomeCurso}</span>
-          </div>
-          <div className="flex justify-between py-1 border-b border-gray-200/50">
-            <span className="text-gray-500 font-medium">Bolsa Auxílio</span>
-            <span className="font-bold text-green-700">{formData.formalizacaoFields?.valorBolsa}</span>
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-6 border-t border-gray-100">
-          <button onClick={prevStep} className="bg-white border border-gray-200 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm">Voltar e Editar</button>
-          <button onClick={() => alert('Formalização finalizada!')} className="bg-[var(--color-blue-jobz)] text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:bg-blue-700 transition-all">
-            Finalizar Formalização
           </button>
         </div>
       </div>
@@ -978,33 +953,10 @@ export default function JobzIntakeForm() {
       
       {currentStep === 0 && renderStep0()}
       {currentStep === 1 && renderStep1()}
-      
-      {formData.serviceType === 'EMPREGO_CLT_PJ' && (
-        <>
-          {currentStep === 2 && renderStep2Emprego()}
-          {currentStep === 3 && renderStep3Emprego()}
-          {currentStep === 4 && renderStep4Emprego()}
-          {currentStep === 5 && renderStep5EmpregoReview()}
-        </>
-      )}
-
-      {formData.serviceType === 'RS_ESTAGIO' && (
-        <>
-          {currentStep === 2 && renderStep2Estagio()}
-          {currentStep === 3 && renderStep3Estagio()}
-          {currentStep === 4 && renderStep4Estagio()}
-          {currentStep === 5 && renderStep5EstagioReview()}
-        </>
-      )}
-
-      {formData.serviceType === 'FORMALIZACAO_ESTAGIO' && (
-        <>
-          {currentStep === 2 && renderStep2Formalizacao()}
-          {currentStep === 3 && renderStep3Formalizacao()}
-          {currentStep === 4 && renderStep4Formalizacao()}
-          {currentStep === 5 && renderStep5FormalizacaoReview()}
-        </>
-      )}
+      {currentStep === 2 && renderStep2Emprego()}
+      {currentStep === 3 && renderStep3Emprego()}
+      {currentStep === 4 && renderStep4Emprego()}
+      {currentStep === 5 && renderStep5EmpregoReview()}
     </div>
   );
 }

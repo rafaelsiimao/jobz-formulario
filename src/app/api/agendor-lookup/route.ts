@@ -39,6 +39,8 @@ export async function POST(request: NextRequest) {
         found: true,
         name: org.name || org.legalName || 'Empresa encontrada',
         id: org.id,
+        email: org.email || org.contact?.email || org.contactEmail || '',
+        phone: org.workPhone || org.mobilePhone || org.contact?.phone || '',
       });
     }
 
