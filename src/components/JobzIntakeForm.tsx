@@ -11,6 +11,7 @@ import {
   CadastroFields,
   EmpregoFields,
   EstagioFields,
+  FormalizacaoFields,
   ContractType,
   WorkModel,
   GenderPreference
@@ -26,7 +27,7 @@ export default function JobzIntakeForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = formData.currentStep || 0;
-  const totalSteps = formData.serviceType === 'EMPREGO_CLT_PJ' ? 7 : formData.serviceType === 'RS_ESTAGIO' ? 7 : 3;
+  const totalSteps = 7; // As três jornadas têm por volta de 7 steps
 
   const nextStep = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -181,8 +182,21 @@ export default function JobzIntakeForm() {
                   aceiteGdprTermos: false
                 }
               }));
+            } else if (formData.serviceType === 'FORMALIZACAO_ESTAGIO') {
+              setFormData(prev => ({
+                ...prev, currentStep: 3,
+                formalizacaoFields: prev.formalizacaoFields || {
+                  jaTemCadastro: true, aceiteGdpr: false, modeloTrabalho: 'Presencial', mesmoLocalSede: true,
+                  supervisor: { nome: '', cargo: '', email: '', celular: '', cursoFormacao: '' },
+                  estagiario: { nome: '', cpf: '', telefone: '' },
+                  instituicaoEnsino: '', nomeCurso: '', periodoSemestre: '',
+                  tituloFuncao: '', descricaoAtividades: '', nivelEstudante: '', genero: 'Indiferente',
+                  jornadaDias: [], dataInicio: '', dataTermino: '', horarioEntrada: '', tempoIntervalo: '', horarioSaida: '',
+                  valorBolsa: '', valorTransporte: '', contemplaBonificacao: false, contemplaOutroBeneficio: false, aceiteGdprTce: false
+                }
+              }));
             } else {
-              alert('Fase 4 (Formalização) será implementada em breve.');
+              alert('Fluxo não suportado.');
             }
           }}
           disabled={!formData.serviceType}
@@ -608,6 +622,172 @@ export default function JobzIntakeForm() {
     );
   };
 
+  // ---------------------------------------------------------------------------
+  // FASE 4: FORMALIZAÇÃO DE ESTÁGIO - STEPS 3 a 7
+  // ---------------------------------------------------------------------------
+  
+  const getForm = (): FormalizacaoFields => formData.formalizacaoFields!;
+  const setForm = (updates: Partial<FormalizacaoFields>) => {
+    setFormData(prev => ({ ...prev, formalizacaoFields: { ...prev.formalizacaoFields!, ...updates } }));
+  };
+
+  const renderStep3Formalizacao = () => {
+    const form = getForm();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Modalidade e Supervisor</h2></div>
+        
+        <div className="space-y-4">
+          <label className="flex items-center gap-2 cursor-pointer font-semibold">
+            <input type="checkbox" checked={form.jaTemCadastro} onChange={e => setForm({ jaTemCadastro: e.target.checked })} />
+            Você confirma que o cliente tem cadastro atualizado?
+          </label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1">Modelo de Trabalho</label>
+              <select value={form.modeloTrabalho} onChange={e => setForm({ modeloTrabalho: e.target.value as WorkModel })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none">
+                <option value="Presencial">Presencial</option><option value="Híbrido">Híbrido</option><option value="Remoto">Remoto</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="border-t pt-4">
+            <h3 className="font-bold mb-3">Dados do Supervisor do Estágio</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div><label className="block text-sm mb-1">Nome Completo</label><input type="text" value={form.supervisor.nome} onChange={e => setForm({ supervisor: { ...form.supervisor, nome: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Cargo</label><input type="text" value={form.supervisor.cargo} onChange={e => setForm({ supervisor: { ...form.supervisor, cargo: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">E-mail</label><input type="email" value={form.supervisor.email} onChange={e => setForm({ supervisor: { ...form.supervisor, email: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Telefone/Celular</label><input type="text" value={form.supervisor.celular} onChange={e => setForm({ supervisor: { ...form.supervisor, celular: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Curso de Formação</label><input type="text" value={form.supervisor.cursoFormacao} onChange={e => setForm({ supervisor: { ...form.supervisor, cursoFormacao: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+              <div><label className="block text-sm mb-1">Registro no Conselho (se houver)</label><input type="text" value={form.supervisor.registroConselho || ''} onChange={e => setForm({ supervisor: { ...form.supervisor, registroConselho: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-[var(--color-surface)] border rounded-md mt-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.aceiteGdpr} onChange={e => setForm({ aceiteGdpr: e.target.checked })} className="mt-1" />
+              <span className="text-sm">Confirmo que as informações do supervisor estão corretas.</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!form.aceiteGdpr || !form.supervisor.nome || !form.supervisor.cursoFormacao} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep4Formalizacao = () => {
+    const form = getForm();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Dados do Estagiário</h2></div>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm font-semibold mb-1">Nome do Estudante</label><input type="text" value={form.estagiario.nome} onChange={e => setForm({ estagiario: { ...form.estagiario, nome: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">CPF</label><input type="text" value={form.estagiario.cpf} onChange={e => setForm({ estagiario: { ...form.estagiario, cpf: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Telefone do Estudante</label><input type="text" value={form.estagiario.telefone} onChange={e => setForm({ estagiario: { ...form.estagiario, telefone: e.target.value }})} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          </div>
+          
+          <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm font-semibold mb-1">Instituição de Ensino</label><input type="text" value={form.instituicaoEnsino} onChange={e => setForm({ instituicaoEnsino: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Nome do Curso</label><input type="text" value={form.nomeCurso} onChange={e => setForm({ nomeCurso: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Semestre / Período Atual</label><input type="text" value={form.periodoSemestre} onChange={e => setForm({ periodoSemestre: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Matrícula (se tiver)</label><input type="text" value={form.matricula || ''} onChange={e => setForm({ matricula: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!form.estagiario.nome || !form.estagiario.cpf || !form.instituicaoEnsino || !form.nomeCurso} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep5Formalizacao = () => {
+    const form = getForm();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Funções e Jornada</h2></div>
+        
+        <div className="space-y-4">
+          <div><label className="block text-sm font-semibold mb-1">Título da Função (estágio em...)</label><input type="text" value={form.tituloFuncao} onChange={e => setForm({ tituloFuncao: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Descrição das Atividades</label><textarea rows={3} value={form.descricaoAtividades} onChange={e => setForm({ descricaoAtividades: e.target.value })} className="w-full border rounded-md p-2 outline-none" /></div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm font-semibold mb-1">Data Início</label><input type="date" value={form.dataInicio} onChange={e => setForm({ dataInicio: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Data Término</label><input type="date" value={form.dataTermino} onChange={e => setForm({ dataTermino: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4">
+            <div><label className="block text-sm font-semibold mb-1">Horário de Entrada</label><input type="time" value={form.horarioEntrada} onChange={e => setForm({ horarioEntrada: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Tempo de Intervalo</label><input type="text" placeholder="Ex: 1 hora" value={form.tempoIntervalo} onChange={e => setForm({ tempoIntervalo: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+            <div><label className="block text-sm font-semibold mb-1">Horário de Saída</label><input type="time" value={form.horarioSaida} onChange={e => setForm({ horarioSaida: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!form.tituloFuncao || !form.descricaoAtividades || !form.dataInicio} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Avançar</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep6Formalizacao = () => {
+    const form = getForm();
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2">Remuneração</h2></div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label className="block text-sm font-semibold mb-1">Valor da Bolsa Auxílio</label><input type="text" placeholder="R$" value={form.valorBolsa} onChange={e => setForm({ valorBolsa: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+          <div><label className="block text-sm font-semibold mb-1">Auxílio Transporte</label><input type="text" placeholder="R$" value={form.valorTransporte} onChange={e => setForm({ valorTransporte: e.target.value })} className="w-full min-h-[44px] border rounded-md px-3 py-2 outline-none" /></div>
+        </div>
+
+        <div className="p-4 bg-[var(--color-surface)] border rounded-md mt-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.aceiteGdprTce} onChange={e => setForm({ aceiteGdprTce: e.target.checked })} className="mt-1" />
+            <span className="text-sm font-medium">Aceito os termos para emissão do Termo de Compromisso de Estágio (TCE).</span>
+          </label>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+          <button onClick={nextStep} disabled={!form.valorBolsa || !form.aceiteGdprTce} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold disabled:opacity-50">Revisar Contrato</button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep7FormalizacaoReview = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+        <div><h2 className="text-2xl font-bold mb-2 text-green-700">Pronto para emitir o TCE!</h2><p className="text-[var(--color-text-secondary)]">Revise os dados antes de finalizar o pedido de formalização.</p></div>
+        
+        <div className="bg-[var(--color-surface)] border p-4 rounded-md space-y-2 text-sm">
+          <p><strong>Empresa:</strong> {formData.cadastroFields?.razaoSocial || formData.agendorData?.name}</p>
+          <p><strong>Estudante:</strong> {formData.formalizacaoFields?.estagiario.nome}</p>
+          <p><strong>Curso:</strong> {formData.formalizacaoFields?.nomeCurso} - {formData.formalizacaoFields?.instituicaoEnsino}</p>
+          <p><strong>Bolsa:</strong> {formData.formalizacaoFields?.valorBolsa} + Transporte: {formData.formalizacaoFields?.valorTransporte}</p>
+          <p><strong>Início previsto:</strong> {formData.formalizacaoFields?.dataInicio}</p>
+        </div>
+
+        <div className="flex justify-between pt-6 border-t">
+          <button onClick={prevStep} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar e Editar</button>
+          <button onClick={() => alert('Fase 5 - Submissão na Abler será implementada em breve!')} className="bg-[var(--color-blue-jobz)] text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-600">
+            Finalizar Formalização
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-[var(--color-card)] rounded-xl shadow-sm border border-[var(--color-line)] p-6 md:p-8 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-[var(--color-line)]">
@@ -635,6 +815,16 @@ export default function JobzIntakeForm() {
           {currentStep === 5 && renderStep5Estagio()}
           {currentStep === 6 && renderStep6Estagio()}
           {currentStep === 7 && renderStep7EstagioReview()}
+        </>
+      )}
+
+      {formData.serviceType === 'FORMALIZACAO_ESTAGIO' && (
+        <>
+          {currentStep === 3 && renderStep3Formalizacao()}
+          {currentStep === 4 && renderStep4Formalizacao()}
+          {currentStep === 5 && renderStep5Formalizacao()}
+          {currentStep === 6 && renderStep6Formalizacao()}
+          {currentStep === 7 && renderStep7FormalizacaoReview()}
         </>
       )}
     </div>
