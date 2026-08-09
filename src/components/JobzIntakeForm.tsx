@@ -27,6 +27,16 @@ function formatCurrency(value: string): string {
   });
 }
 
+// Os 6 benefícios mais populares para atalho rápido
+const QUICK_BENEFITS = [
+  'Vale Refeição / Alimentação (VR/VA)',
+  'Vale Transporte (VT)',
+  'Plano de Saúde',
+  'Plano Odontológico',
+  'Gympass / Totalpass',
+  'Auxílio Home Office'
+];
+
 export default function JobzIntakeForm() {
   const [formData, setFormData] = useState<JobzFormData>(createInitialFormState());
   const [isChecking, setIsChecking] = useState(false);
@@ -34,17 +44,19 @@ export default function JobzIntakeForm() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   
-  // Benefícios carregados da API da Abler
+  // Lista de benefícios da Abler
   const [ablerBenefitsList, setAblerBenefitsList] = useState<string[]>([]);
   const [loadingBenefits, setLoadingBenefits] = useState(false);
-  const [customBenefit, setCustomBenefit] = useState('');
+  const [benefitSearchQuery, setBenefitSearchQuery] = useState('');
+  const [showBenefitDropdown, setShowBenefitDropdown] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const benefitInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = formData.currentStep || 0;
   const totalSteps = 5;
 
-  // Carregar a lista de benefícios da Abler ao carregar o componente
+  // Carregar benefícios da API Abler
   useEffect(() => {
     async function loadBenefits() {
       setLoadingBenefits(true);
@@ -256,13 +268,18 @@ export default function JobzIntakeForm() {
     setFormData(prev => ({ ...prev, empregoFields: { ...prev.empregoFields!, ...updates } }));
   };
 
-  const toggleBenefit = (bName: string) => {
+  const addBenefit = (bName: string) => {
     const current = getEmp().beneficios || [];
-    if (current.includes(bName)) {
-      setEmp({ beneficios: current.filter(b => b !== bName) });
-    } else {
+    if (!current.includes(bName)) {
       setEmp({ beneficios: [...current, bName] });
     }
+    setBenefitSearchQuery('');
+    setShowBenefitDropdown(false);
+  };
+
+  const removeBenefit = (bName: string) => {
+    const current = getEmp().beneficios || [];
+    setEmp({ beneficios: current.filter(b => b !== bName) });
   };
 
   const renderStep2Emprego = () => {
@@ -274,7 +291,6 @@ export default function JobzIntakeForm() {
           <p className="text-sm text-gray-500">Defina o cargo, modalidade e requisitos da oportunidade.</p>
         </div>
 
-        {/* Toggle Vaga Sigilosa */}
         <ToggleSwitch 
           label="Vaga Sigilosa?"
           description="Ative caso a contratação seja para substituição sigilosa na empresa."
@@ -473,9 +489,16 @@ export default function JobzIntakeForm() {
     const emp = getEmp();
 
     const handleSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const formatted = formatCurrency(e.target.value);
-      setEmp({ salarioBruto: formatted });
+      setEmp({ salarioBruto: formatCurrency(e.target.value) });
     };
+
+    // Filtrar sugestões de busca
+    const filteredSuggestions = benefitSearchQuery.trim()
+      ? ablerBenefitsList.filter(b => 
+          b.toLowerCase().includes(benefitSearchQuery.toLowerCase()) && 
+          !(emp.beneficios || []).includes(b)
+        ).slice(0, 5)
+      : [];
 
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -510,44 +533,111 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* Seleção de Benefícios da Abler */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">
-            Benefícios Oferecidos {loadingBenefits && <span className="text-xs font-normal text-gray-400">(carregando Abler...)</span>}
-          </label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {ablerBenefitsList.map(bName => {
-              const isSelected = (emp.beneficios || []).includes(bName);
-              return (
-                <button
-                  key={bName}
-                  type="button"
-                  onClick={() => toggleBenefit(bName)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border ${
-                    isSelected 
-                      ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {isSelected ? `✓ ${bName}` : `+ ${bName}`}
-                </button>
-              );
-            })}
+        {/* Bloco Limpo e Otimizado de Benefícios */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">
+              Atalhos de Benefícios Mais Comuns
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_BENEFITS.map(bName => {
+                const isSelected = (emp.beneficios || []).includes(bName);
+                return (
+                  <button
+                    key={bName}
+                    type="button"
+                    onClick={() => isSelected ? removeBenefit(bName) : addBenefit(bName)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                      isSelected 
+                        ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {isSelected ? `✓ ${bName}` : `+ ${bName}`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="mt-2">
-            <label className="block text-xs text-gray-500 mb-1 font-medium">Outro Benefício / Observação</label>
-            <input 
-              type="text" 
-              placeholder="Ex: Auxílio combustível, Day off de aniversário..." 
-              value={emp.descricaoBeneficios} 
-              onChange={e => setEmp({ descricaoBeneficios: e.target.value })} 
-              className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" 
-            />
+          {/* Campo de Busca Autocomplete no Catálogo Abler */}
+          <div className="relative">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">
+              Buscar Outro Benefício (Abler) ou Digitar Customizado
+            </label>
+            <div className="flex gap-2">
+              <input 
+                ref={benefitInputRef}
+                type="text" 
+                placeholder="Ex: Auxílio Creche, Seguro de Vida..." 
+                value={benefitSearchQuery} 
+                onChange={e => {
+                  setBenefitSearchQuery(e.target.value);
+                  setShowBenefitDropdown(true);
+                }} 
+                onFocus={() => setShowBenefitDropdown(true)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && benefitSearchQuery.trim()) {
+                    e.preventDefault();
+                    addBenefit(benefitSearchQuery.trim());
+                  }
+                }}
+                className="w-full min-h-[44px] bg-gray-50 border border-gray-200 rounded-xl px-4 text-xs font-medium outline-none focus:bg-white focus:border-[var(--color-blue-jobz)]" 
+              />
+              {benefitSearchQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={() => addBenefit(benefitSearchQuery.trim())}
+                  className="bg-gray-900 text-white text-xs font-semibold px-4 rounded-xl hover:bg-black shrink-0"
+                >
+                  Adicionar
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown com sugestões da Abler */}
+            {showBenefitDropdown && filteredSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+                {filteredSuggestions.map(sugg => (
+                  <div
+                    key={sugg}
+                    onClick={() => addBenefit(sugg)}
+                    className="px-4 py-2 text-xs font-medium text-gray-700 hover:bg-blue-50 hover:text-[var(--color-blue-jobz)] cursor-pointer transition-colors"
+                  >
+                    + {sugg}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Tags dos Benefícios Selecionados */}
+          {emp.beneficios && emp.beneficios.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
+                Benefícios Selecionados ({emp.beneficios.length}):
+              </label>
+              <div className="flex flex-wrap gap-1.5 p-3 bg-gray-50 border border-gray-200/60 rounded-xl">
+                {emp.beneficios.map(b => (
+                  <span 
+                    key={b} 
+                    className="inline-flex items-center gap-1.5 bg-blue-50 text-[var(--color-blue-jobz)] border border-blue-200/50 font-semibold text-xs px-3 py-1 rounded-lg"
+                  >
+                    <span>{b}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => removeBenefit(b)}
+                      className="hover:text-red-600 text-blue-400 font-bold text-sm leading-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Toggle Aceite 24h */}
         <ToggleSwitch 
           label="Ciente do prazo de início (24h a 48h)"
           description="Estou ciente que após o alinhamento da vaga, o processo seletivo inicia em até 48 horas."
@@ -594,7 +684,7 @@ export default function JobzIntakeForm() {
           </div>
           {emp.beneficios && emp.beneficios.length > 0 && (
             <div className="py-1">
-              <span className="text-gray-500 font-medium block mb-1">Benefícios</span>
+              <span className="text-gray-500 font-medium block mb-1">Benefícios ({emp.beneficios.length})</span>
               <div className="flex flex-wrap gap-1">
                 {emp.beneficios.map(b => (
                   <span key={b} className="bg-blue-50 text-[var(--color-blue-jobz)] font-semibold text-xs px-2.5 py-0.5 rounded-full">{b}</span>
