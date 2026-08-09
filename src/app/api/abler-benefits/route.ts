@@ -28,7 +28,6 @@ const DEFAULT_CONTRACTS = [
 ];
 
 const DEFAULT_EDUCATION_LEVELS = [
-  'Ensino Fundamental',
   'Ensino Médio',
   'Ensino Técnico',
   'Ensino Superior Cursando',

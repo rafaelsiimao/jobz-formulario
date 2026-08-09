@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { checkAblerCompany, lookupCnpjInAgendor } from '@/lib/client-api';
 import { uploadVagaFile } from '@/lib/supabase-client';
 import { lookupCep } from '@/lib/viacep-client';
@@ -41,12 +42,13 @@ const QUICK_BENEFITS = [
 export default function JobzIntakeForm() {
   const [formData, setFormData] = useState<JobzFormData>(createInitialFormState());
   const [isChecking, setIsChecking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isSearchingCep, setIsSearchingCep] = useState(false);
 
-  // Metadados da API (benefícios, contratos, escolaridade)
+  // Metadados da API (benefícios, contratos, escolaridade sem Fundamental)
   const [ablerBenefitsList, setAblerBenefitsList] = useState<string[]>([]);
   const [ablerContracts, setAblerContracts] = useState<string[]>(['CLT', 'PJ', 'Estágio', 'Freelancer', 'Temporário']);
   const [ablerEducationLevels, setAblerEducationLevels] = useState<string[]>([
@@ -59,7 +61,7 @@ export default function JobzIntakeForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentStep = formData.currentStep || 0;
-  const totalSteps = 6;
+  const totalSteps = 7;
 
   // Carregar metadados ao inicializar
   useEffect(() => {
@@ -71,7 +73,9 @@ export default function JobzIntakeForm() {
           const data = await res.json();
           if (Array.isArray(data.benefits)) setAblerBenefitsList(data.benefits);
           if (Array.isArray(data.contracts)) setAblerContracts(data.contracts);
-          if (Array.isArray(data.educationLevels)) setAblerEducationLevels(data.educationLevels);
+          if (Array.isArray(data.educationLevels)) {
+            setAblerEducationLevels(data.educationLevels.filter((e: string) => !/fundamental/i.test(e)));
+          }
         }
       } catch (err) {
         console.error('Erro ao carregar metadados:', err);
@@ -118,7 +122,7 @@ export default function JobzIntakeForm() {
       if (rawDoc.length === 14) {
         agendorResult = await lookupCnpjInAgendor(rawDoc);
         if (!agendorResult.found) {
-          setErrorMsg('Empresa não cadastrada. Não é possível prosseguir.');
+          setErrorMsg('Empresa não cadastrada no sistema. Entre em contato com a Jobz.');
           setIsChecking(false);
           return;
         }
@@ -170,6 +174,42 @@ export default function JobzIntakeForm() {
     }
   };
 
+  // Submissão Final do Formulário com Loading & Tela de Sucesso + Confetes
+  const handleSubmitForm = async () => {
+    setIsSubmitting(true);
+    try {
+      // Simulação da chamada da API de submissão
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setIsSubmitting(false);
+      setFormData(prev => ({ ...prev, currentStep: 7 }));
+
+      // Dispara confetes comemorativos 🎉
+      confetti({
+        particleCount: 140,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 60,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        });
+        confetti({
+          particleCount: 60,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+      }, 250);
+    } catch (err) {
+      setIsSubmitting(false);
+      alert('Erro ao enviar vaga. Tente novamente.');
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // STEP 0: Identificação da Empresa (CNPJ / CPF)
   // ---------------------------------------------------------------------------
@@ -206,7 +246,7 @@ export default function JobzIntakeForm() {
   );
 
   // ---------------------------------------------------------------------------
-  // STEP 1: Escolha do Serviço
+  // STEP 1: Escolha do Serviço (Opção 1 de UX Copywriting)
   // ---------------------------------------------------------------------------
   const renderStep1 = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -310,7 +350,7 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* 3 Acordos Comerciais com Alinhamento Flexbox Perfeito (items-start gap-3.5) */}
+        {/* 3 Acordos Comerciais */}
         <div className="space-y-3 pt-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Acordos Comerciais da Abertura</h3>
 
@@ -417,7 +457,7 @@ export default function JobzIntakeForm() {
           />
         </div>
 
-        {/* Modelo de Contrato (Excluindo Estágio) */}
+        {/* Modelo de Contrato (Sem Estágio) */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Modelo de Contrato</label>
           <div className="flex flex-wrap gap-2">
@@ -468,34 +508,36 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* Escolaridade */}
+        {/* Escolaridade (Sem Fundamental) */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Escolaridade Mínima</label>
           <div className="flex flex-wrap gap-2">
-            {ablerEducationLevels.map(edu => {
-              const isSelected = (emp.escolaridade || []).includes(edu);
-              return (
-                <button
-                  key={edu}
-                  type="button"
-                  onClick={() => {
-                    const current = emp.escolaridade || [];
-                    if (isSelected) {
-                      setEmp({ escolaridade: current.filter(e => e !== edu) });
-                    } else {
-                      setEmp({ escolaridade: [...current, edu] });
-                    }
-                  }}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
-                    isSelected 
-                      ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)]' 
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                  }`}
-                >
-                  {isSelected ? `✓ ${edu}` : edu}
-                </button>
-              );
-            })}
+            {ablerEducationLevels
+              .filter(edu => !/fundamental/i.test(edu))
+              .map(edu => {
+                const isSelected = (emp.escolaridade || []).includes(edu);
+                return (
+                  <button
+                    key={edu}
+                    type="button"
+                    onClick={() => {
+                      const current = emp.escolaridade || [];
+                      if (isSelected) {
+                        setEmp({ escolaridade: current.filter(e => e !== edu) });
+                      } else {
+                        setEmp({ escolaridade: [...current, edu] });
+                      }
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                      isSelected 
+                        ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)]' 
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    {isSelected ? `✓ ${edu}` : edu}
+                  </button>
+                );
+              })}
           </div>
         </div>
 
@@ -519,7 +561,6 @@ export default function JobzIntakeForm() {
             ))}
           </div>
 
-          {/* Campo Dinâmico ao Selecionar Outro Gênero */}
           {emp.genero === 'Outro' && (
             <div className="pt-1 animate-in fade-in duration-200">
               <label className="block text-xs font-bold text-gray-600 mb-1">Especifique o Gênero</label>
@@ -762,7 +803,7 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* Local de Atuação: botão sem "Sede Agendor", com CEP limpo e Número */}
+        {/* Local de Atuação */}
         <div className="p-5 bg-gray-50/70 border border-gray-200 rounded-2xl space-y-3">
           <label className="block text-xs font-bold uppercase text-gray-600 mb-1">Local de atuação é o mesmo da sede da empresa?</label>
           <div className="flex gap-3">
@@ -855,7 +896,7 @@ export default function JobzIntakeForm() {
           </div>
         </div>
 
-        {/* Benefícios Inteligentes (sem menção à Abler) */}
+        {/* Benefícios */}
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Atalhos de Benefícios Principais</label>
@@ -880,7 +921,6 @@ export default function JobzIntakeForm() {
             </div>
           </div>
 
-          {/* Autocomplete com Marca Jobz */}
           <div className="relative">
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Buscar ou Adicionar Outro Benefício</label>
             <div className="flex gap-2">
@@ -919,7 +959,6 @@ export default function JobzIntakeForm() {
             )}
           </div>
 
-          {/* Benefícios Selecionados com Frequência (/dia ou /mês) */}
           {emp.beneficios && emp.beneficios.length > 0 && (
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-600">
@@ -981,7 +1020,7 @@ export default function JobzIntakeForm() {
   };
 
   // ---------------------------------------------------------------------------
-  // STEP 6: Avisos Finais & Confirmação Executiva
+  // STEP 6: Revisão Executiva
   // ---------------------------------------------------------------------------
   const renderStep6EmpregoReview = () => {
     const emp = getEmp();
@@ -1021,18 +1060,85 @@ export default function JobzIntakeForm() {
         {/* Card de Avisos Finais e Prazos Obrigatórios */}
         <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl space-y-2.5 text-xs text-blue-950 font-medium leading-relaxed">
           <p>📌 <strong>Próximas 24h:</strong> O recrutador responsável fará contato por e-mail, ligação ou WhatsApp para seguir com o alinhamento da vaga.</p>
-          <p>🗓️ <strong>Agenda de Entrevistas:</strong> As entrevistas com os candidatos selecionados acontecerão na empresa após <strong>11 dias</strong> da data de hoje. <em>(Caso não seja possível, sinalize ao recrutador no ato do alinhamento)</em>.</p>
+          <p>🗓️ <strong>Agenda de Entrevistas:</strong> As entrevistas com os candidatos selecionados acontecerão na empresa após <strong>11 dias</strong> da data de hoje.</p>
           <p>⌛ <strong>Prazo de Retorno:</strong> Conforme proposta recebida, aguardamos até <strong>3 dias úteis</strong> para a realização das entrevistas após a entrega dos currículos selecionados.</p>
         </div>
 
         <div className="flex justify-between pt-6 border-t border-gray-100">
           <button onClick={prevStep} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all">Voltar e Editar</button>
           <button 
-            onClick={() => alert('Vaga enviada com sucesso para a Jobz!')}
-            className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all"
+            onClick={handleSubmitForm}
+            disabled={isSubmitting}
+            className="bg-[var(--color-blue-jobz)] hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-semibold text-sm shadow-sm hover:shadow transition-all disabled:opacity-50 flex items-center gap-2"
           >
-            Confirmar e Abrir Vaga
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Registrando vaga...</span>
+              </>
+            ) : (
+              <span>Confirmar e Enviar Vaga</span>
+            )}
           </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ---------------------------------------------------------------------------
+  // STEP 7: Tela de Sucesso Celebratória (Com Confetes & Cuidado com o Cliente)
+  // ---------------------------------------------------------------------------
+  const renderStep7Success = () => {
+    const emp = getEmp();
+    return (
+      <div className="text-center py-6 px-2 space-y-6 animate-in zoom-in-95 duration-500">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 text-green-600 rounded-full mb-2 shadow-lg shadow-green-100 animate-bounce">
+          <span className="text-4xl">🎉</span>
+        </div>
+
+        <div>
+          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Vaga Recebida com Sucesso!</h2>
+          <p className="text-base text-gray-600 mt-2 max-w-md mx-auto leading-relaxed">
+            Parabéns! Registramos todas as informações da vaga de <strong className="text-gray-900">{emp.tituloCargo}</strong> para a <strong className="text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</strong>.
+          </p>
+        </div>
+
+        <div className="bg-blue-50/70 border border-blue-100 p-6 rounded-2xl max-w-lg mx-auto text-left space-y-3.5 text-xs text-blue-950 leading-relaxed shadow-xs">
+          <div className="flex items-start gap-3">
+            <span className="text-base">📞</span>
+            <div>
+              <strong className="block text-sm text-blue-900 mb-0.5">Contato do Recrutador em 24h</strong>
+              Nas próximas 24 horas úteis, o seu recrutador exclusivo da Jobz entrará em contato via E-mail/WhatsApp ({emp.emailContatoConfirmado}) para realizar o alinhamento e confirmar a abertura da vaga.
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 pt-2 border-t border-blue-200/60">
+            <span className="text-base">🗓️</span>
+            <div>
+              <strong className="block text-sm text-blue-900 mb-0.5">Prazo Estimado de Entrevistas</strong>
+              As entrevistas com os candidatos selecionados pela Jobz acontecerão na sua empresa em até <strong>11 dias</strong> da data de hoje.
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+          <button 
+            onClick={() => setFormData(createInitialFormState())}
+            className="w-full sm:w-auto bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-xl font-semibold text-sm shadow-sm transition-all"
+          >
+            Abrir Outra Vaga
+          </button>
+          <a 
+            href="https://wa.me/5527999999999?text=Ol%C3%A1%2C%20acabei%20de%20abrir%20uma%20vaga%20no%20formul%C3%A1rio%20Jobz!" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
+          >
+            <span>💬 Falar no WhatsApp</span>
+          </a>
         </div>
       </div>
     );
@@ -1057,6 +1163,7 @@ export default function JobzIntakeForm() {
       {currentStep === 4 && renderStep4Descricao()}
       {currentStep === 5 && renderStep5LocalSalario()}
       {currentStep === 6 && renderStep6EmpregoReview()}
+      {currentStep === 7 && renderStep7Success()}
     </div>
   );
 }
