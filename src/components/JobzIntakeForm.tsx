@@ -87,7 +87,8 @@ export default function JobzIntakeForm() {
         } : undefined
       }));
 
-      setFormData(prev => ({ ...prev, currentStep: ablerResult.exists ? 2 : 1 }));
+      // Como a empresa foi identificada no Agendor, vai direto para a escolha do serviço (Step 2)
+      setFormData(prev => ({ ...prev, currentStep: 2 }));
     } catch (err) {
       setErrorMsg('Erro ao consultar as integrações.');
     } finally {
@@ -153,7 +154,7 @@ export default function JobzIntakeForm() {
         ))}
       </div>
       <div className="flex justify-between pt-6">
-        <button onClick={() => setFormData(prev => ({ ...prev, currentStep: formData.isNewCompany ? 1 : 0 }))} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
+        <button onClick={() => setFormData(prev => ({ ...prev, currentStep: 0 }))} className="bg-white border px-6 py-2 rounded-md font-semibold">Voltar</button>
         <button
           onClick={() => {
             if (formData.serviceType === 'EMPREGO_CLT_PJ') {
