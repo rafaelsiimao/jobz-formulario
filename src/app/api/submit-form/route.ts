@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         const rawSalary = (empregoFields.salarioBruto || '').replace(/\D/g, '');
         const salaryValue = rawSalary ? (parseFloat(rawSalary) / 100).toFixed(2) : null;
 
-        const ablerPayload = {
+        const baseVacancyObj = {
           customer_id: targetCustomerId,
           title: empregoFields.tituloCargo,
           contracting_regime: regime,
@@ -138,26 +138,40 @@ export async function POST(request: NextRequest) {
           salary_value: salaryValue,
           mandatory_requirements: empregoFields.hardSkills || empregoFields.descricaoCargo || 'Ver ficha da vaga',
           desirable_requirements: empregoFields.softSkills || '',
-          working_journey: `Segunda a Sexta (${empregoFields.horarioInicio || '08:00'} às ${empregoFields.horarioFim || '18:00'}) - Intervalo: ${empregoFields.tempoIntervalo || '01:00'}`
+          working_journey: `Segunda a Sexta (${empregoFields.horarioInicio || '08:00'} às ${empregoFields.horarioFim || '18:00'}) - Intervalo: ${empregoFields.tempoIntervalo || '01:00'}`,
+          search_cities_term: [],
+          vacancies_benefits: [],
+          job_benefits: []
         };
 
-        const ablerRes = await fetch(`${ABLER_BASE_URL}/api/company/v1/vacancies`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-API-INT-TOKEN': ABLER_API_TOKEN,
-          },
-          body: JSON.stringify(ablerPayload)
-        });
+        const attemptPayloads = [
+          // Tentativa A: com wrapper vacancy e coleções inicializadas
+          { vacancy: baseVacancyObj },
+          // Tentativa B: no nível raiz com coleções inicializadas
+          baseVacancyObj
+        ];
 
-        if (ablerRes.ok) {
-          const ablerData = await ablerRes.json();
-          ablerVacancyId = ablerData?.data?.id || ablerData?.id || null;
-        } else {
-          const errText = await ablerRes.text();
-          console.error(`Erro Abler [${ablerRes.status}]:`, errText);
-          ablerErrorMsg = `Erro ${ablerRes.status}: ${errText.slice(0, 150)}`;
+        for (const payload of attemptPayloads) {
+          const ablerRes = await fetch(`${ABLER_BASE_URL}/api/company/v1/vacancies`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-API-INT-TOKEN': ABLER_API_TOKEN,
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (ablerRes.ok) {
+            const ablerData = await ablerRes.json();
+            ablerVacancyId = ablerData?.data?.id || ablerData?.id || null;
+            ablerErrorMsg = null;
+            break; // Sucesso!
+          } else {
+            const errText = await ablerRes.text();
+            console.error(`Tentativa Abler falhou [${ablerRes.status}]:`, errText);
+            ablerErrorMsg = `Erro ${ablerRes.status}: ${errText.slice(0, 150)}`;
+          }
         }
       } catch (err: any) {
         console.error('Exceção Abler:', err.message);
