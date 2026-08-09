@@ -214,28 +214,36 @@ export default function JobzIntakeForm() {
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold mb-2">
           <span>✓ Empresa identificada</span>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Qual serviço você precisa hoje?</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Como a Jobz pode impulsionar sua equipe hoje?</h2>
         <p className="text-sm text-gray-500">
-          Empresa: <strong className="text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</strong>
+          Selecione o serviço desejado para a empresa: <strong className="text-gray-900">{formData.agendorData?.name || formData.cnpjOuCpfBusca}</strong>
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-3">
-        {(Object.entries(SERVICE_DESCRIPTIONS) as [ServiceType, {title: string, description: string}][]).map(([key, service]) => (
+      <div className="grid grid-cols-1 gap-3.5">
+        {(Object.entries(SERVICE_DESCRIPTIONS) as [ServiceType, {title: string, tagline: string, description: string, icon: string}][]).map(([key, service]) => (
           <div 
             key={String(key)} 
             onClick={() => setFormData(prev => ({ ...prev, serviceType: key }))} 
             className={`group cursor-pointer p-5 rounded-2xl border-2 transition-all duration-200 relative overflow-hidden ${
               formData.serviceType === key 
-                ? 'border-[var(--color-blue-jobz)] bg-blue-50/50 shadow-sm' 
+                ? 'border-[var(--color-blue-jobz)] bg-blue-50/40 shadow-sm' 
                 : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50/50'
             }`}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-bold text-base text-gray-900 group-hover:text-[var(--color-blue-jobz)] transition-colors">{service.title}</h3>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{service.description}</p>
+            <div className="flex items-start gap-4">
+              <div className="text-2xl p-2.5 bg-white rounded-xl border border-gray-100 shadow-2xs shrink-0">
+                {service.icon}
               </div>
-              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
+              <div className="flex-1 pr-4">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <h3 className="font-bold text-base text-gray-900 group-hover:text-[var(--color-blue-jobz)] transition-colors">{service.title}</h3>
+                  <span className="px-2.5 py-0.5 bg-blue-100/70 text-[var(--color-blue-jobz)] rounded-full text-[11px] font-bold">
+                    {service.tagline}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed font-medium">{service.description}</p>
+              </div>
+              <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-1 transition-all ${
                 formData.serviceType === key ? 'border-[var(--color-blue-jobz)] bg-[var(--color-blue-jobz)]' : 'border-gray-300'
               }`}>
                 {formData.serviceType === key && <div className="h-2 w-2 rounded-full bg-white" />}
@@ -409,24 +417,26 @@ export default function JobzIntakeForm() {
           />
         </div>
 
-        {/* Modelo de Contrato */}
+        {/* Modelo de Contrato (Excluindo Estágio) */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5">Modelo de Contrato</label>
           <div className="flex flex-wrap gap-2">
-            {ablerContracts.map(type => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setEmp({ modeloContrato: type as ContractType })}
-                className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all border ${
-                  emp.modeloContrato === type 
-                    ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
-                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+            {ablerContracts
+              .filter(type => !/est[áa]gio/i.test(type))
+              .map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setEmp({ modeloContrato: type as ContractType })}
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs transition-all border ${
+                    emp.modeloContrato === type 
+                      ? 'bg-[var(--color-blue-jobz)] text-white border-[var(--color-blue-jobz)] shadow-xs' 
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
           </div>
         </div>
 

@@ -7,21 +7,29 @@ export type ServiceType = 'EMPREGO_CLT_PJ' | 'RS_ESTAGIO' | 'FORMALIZACAO_ESTAGI
 
 export interface ServiceDescription {
   title: string;
+  tagline: string;
   description: string;
+  icon: string;
 }
 
 export const SERVICE_DESCRIPTIONS: Record<Exclude<ServiceType, null>, ServiceDescription> = {
   EMPREGO_CLT_PJ: {
-    title: 'R&S - Vaga de Emprego (CLT/PJ)',
-    description: 'Buscamos e selecionamos o profissional ideal para a sua empresa do zero.',
+    title: 'Contratação de Emprego',
+    tagline: 'Recrutamento & Seleção Completo',
+    description: 'Procuramos, entrevistamos e entregamos os melhores profissionais para o seu time. Cuidamos de todo o processo do início ao fim.',
+    icon: '💼',
   },
   RS_ESTAGIO: {
-    title: 'R&S - Estágio',
-    description: 'Encontramos o estudante com o perfil certo para integrar sua equipe.',
+    title: 'Contratação de Estagiário',
+    tagline: 'Atração & Seleção de Talentos',
+    description: 'Encontramos estudantes com o perfil certo e alinhados à cultura da sua empresa para reforçar sua equipe.',
+    icon: '🎓',
   },
   FORMALIZACAO_ESTAGIO: {
-    title: 'Formalização de Contrato de Estágio',
-    description: 'Já encontrou seu estagiário? A Jobz cuida de toda a burocracia, documentos e contrato legal para você.',
+    title: 'Formalização Legal de Estágio',
+    tagline: 'Burocracia Zero & Contrato Legal',
+    description: 'Já escolheu seu estagiário? A Jobz emite o contrato legal (TCE), cuida do seguro obrigatório e resolve toda a papelada.',
+    icon: '📄',
   },
 };
 
