@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { submitForm, lookupCnpjInAgendor } from '@/lib/abler-api';
+import { submitForm, lookupCnpjInAgendor } from '@/lib/client-api';
 import {
   createInitialFormState,
   ExperienceLevel,
