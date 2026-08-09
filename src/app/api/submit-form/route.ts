@@ -13,7 +13,7 @@ const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || 'rafael.simao@jobz.com.b
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.json();
-    const { cnpjOuCpfBusca, agendorData, ablerCustomerId, serviceType, empregoFields } = formData;
+    const { cnpjOuCpfBusca, agendorData, ablerCustomerId, empregoFields } = formData;
 
     const companyName = agendorData?.name || cnpjOuCpfBusca || 'Empresa Cliente';
     const emailContato = empregoFields?.emailContatoConfirmado || agendorData?.email || 'rafael.simao@jobz.com.br';
@@ -21,32 +21,49 @@ export async function POST(request: NextRequest) {
 
     // 1. Tentar criar rascunho de vaga na API da Abler (POST /api/company/v1/vacancies)
     let ablerVacancyId: string | number | null = null;
-    let ablerStatus = 'Rascunho gerado via API';
     let ablerErrorMsg: string | null = null;
 
-    if (ablerCustomerId && empregoFields?.tituloCargo) {
+    // customer_id alvo (usar ID do cliente ou fallback para 582)
+    const targetCustomerId = (ablerCustomerId && !isNaN(parseInt(String(ablerCustomerId), 10)))
+      ? parseInt(String(ablerCustomerId), 10)
+      : 582;
+
+    if (empregoFields?.tituloCargo) {
       try {
         let workType = 'presential';
-        if (empregoFields.modeloTrabalho === 'Remoto') workType = 'remote';
-        if (empregoFields.modeloTrabalho === 'Híbrido') workType = 'hybrid';
+        const rawWork = (empregoFields.modeloTrabalho || '').toLowerCase();
+        if (rawWork.includes('remoto') || rawWork.includes('home')) workType = 'remote';
+        if (rawWork.includes('híbrido') || rawWork.includes('hibrido')) workType = 'hybrid';
 
-        let regime = (empregoFields.modeloContrato || 'CLT').toLowerCase();
+        let regime = 'clt';
+        const rawRegime = (empregoFields.modeloContrato || '').toLowerCase();
+        if (rawRegime.includes('pj')) regime = 'pj';
+        else if (rawRegime.includes('freelancer')) regime = 'freelancer';
+        else if (rawRegime.includes('temporário') || rawRegime.includes('temporario')) regime = 'temporary';
+
+        let seniority = 'pleno';
+        const rawNivel = (empregoFields.nivel || '').toLowerCase();
+        if (rawNivel.includes('operacional')) seniority = 'operacional';
+        else if (rawNivel.includes('assistente')) seniority = 'assistente';
+        else if (rawNivel.includes('analista')) seniority = 'pleno';
+        else if (rawNivel.includes('especialista')) seniority = 'especialista';
+        else if (rawNivel.includes('liderança') || rawNivel.includes('gestão')) seniority = 'lideranca';
 
         const rawSalary = (empregoFields.salarioBruto || '').replace(/\D/g, '');
         const salaryValue = rawSalary ? (parseFloat(rawSalary) / 100).toFixed(2) : null;
 
         const ablerPayload = {
           vacancy: {
-            customer_id: parseInt(String(ablerCustomerId), 10),
+            customer_id: targetCustomerId,
             title: empregoFields.tituloCargo,
             contracting_regime: regime,
             work_type: workType,
             quantity: empregoFields.quantidadeVagas || 1,
-            seniority_level: empregoFields.nivel || 'Analista',
+            seniority_level: seniority,
             is_confidential: Boolean(empregoFields.vagaSigilosa),
             status: 'draft',
             salary_value: salaryValue,
-            mandatory_requirements: empregoFields.hardSkills || empregoFields.descricaoCargo || 'Especificado no formulário',
+            mandatory_requirements: empregoFields.hardSkills || empregoFields.descricaoCargo || 'Ver ficha da vaga',
             desirable_requirements: empregoFields.softSkills || '',
             working_journey: `Segunda a Sexta (${empregoFields.horarioInicio || '08:00'} às ${empregoFields.horarioFim || '18:00'}) - Intervalo: ${empregoFields.tempoIntervalo || '01:00'}`
           }
@@ -67,16 +84,16 @@ export async function POST(request: NextRequest) {
           ablerVacancyId = ablerData?.data?.id || ablerData?.id || null;
         } else {
           const errText = await ablerRes.text();
-          console.error(`Erro ao criar vaga na Abler [${ablerRes.status}]:`, errText);
-          ablerErrorMsg = `API Abler retornou status ${ablerRes.status}`;
+          console.error(`Erro Abler [${ablerRes.status}]:`, errText);
+          ablerErrorMsg = `Erro ${ablerRes.status}: ${errText.slice(0, 150)}`;
         }
       } catch (err: any) {
-        console.error('Exceção ao chamar API da Abler:', err.message);
+        console.error('Exceção Abler:', err.message);
         ablerErrorMsg = err.message;
       }
     }
 
-    // 2. Formatar lista de benefícios com valores e frequência para o e-mail
+    // 2. Formatar lista de benefícios com valores e frequência
     const beneficiosListHtml = (empregoFields?.beneficios || []).map((bName: string) => {
       const valObj = (empregoFields?.valoresBeneficios || {})[bName];
       if (valObj && valObj.valor) {
@@ -131,8 +148,8 @@ export async function POST(request: NextRequest) {
                 </tr>
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                   <td style="padding: 10px 0; font-weight: 600; color: #64748b;">Status na Abler:</td>
-                  <td style="padding: 10px 0; font-weight: 700; color: #2563eb;">
-                    ${ablerVacancyId ? `Vaga Draft Criada (ID: ${ablerVacancyId})` : (ablerErrorMsg || 'Aguardando revisão manual')}
+                  <td style="padding: 10px 0; font-weight: 700; color: ${ablerVacancyId ? '#16a34a' : '#dc2626'};">
+                    ${ablerVacancyId ? `✅ Vaga Rascunho Criada (ID: ${ablerVacancyId})` : (ablerErrorMsg || 'Aguardando vinculação manual')}
                   </td>
                 </tr>
               </table>
@@ -145,7 +162,7 @@ export async function POST(request: NextRequest) {
               </div>
 
               ${empregoFields?.descricaoCargo ? `
-                <div style="background: #f8fafc; p: 14px; border-radius: 10px; margin-bottom: 16px;">
+                <div style="background: #f8fafc; padding: 14px; border-radius: 10px; margin-bottom: 16px;">
                   <strong style="font-size: 13px; color: #334155;">Descrição da Função:</strong>
                   <p style="margin: 4px 0 0; font-size: 13px; color: #475569;">${empregoFields.descricaoCargo}</p>
                 </div>
@@ -154,7 +171,7 @@ export async function POST(request: NextRequest) {
               ${empregoFields?.anexoDescricaoUrl ? `
                 <div style="background: #eff6ff; padding: 12px; border-radius: 10px; border: 1px solid #bfdbfe; margin-bottom: 16px;">
                   <strong style="font-size: 13px; color: #1e40af;">📎 Arquivo Anexo da Vaga:</strong>
-                  <a href="${empregoFields.anexoDescricaoUrl}" target="_blank" style="display: block; color: #2563eb; font-[13px] font-weight: 600; margin-top: 4px;">Acessar PDF/Word da Vaga</a>
+                  <a href="${empregoFields.anexoDescricaoUrl}" target="_blank" style="display: block; color: #2563eb; font-size: 13px; font-weight: 600; margin-top: 4px;">Acessar PDF/Word da Vaga</a>
                 </div>
               ` : ''}
 
